@@ -8,7 +8,7 @@ const app = express();
 
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, 'client/build')));
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieSession({
   name: 'session',
   keys: ['key1', 'key2']
@@ -31,12 +31,19 @@ app.post('/api/getMenu', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-  console.log('reached login');
-  console.log(req);
+  console.log(req.body);
+  res.send("success");
 });
 
 app.post('/logout', (req, res) => {
-  console.log('reached logou');
+  console.log('reached logout');
+});
+
+app.get('/restaurant/:id', (req, res) => {
+  const queryConfig = {
+    text: "SELECT * FROM tables WHERE restaurant_id = $1",
+    values: [req.params.id]
+  };
 });
 
 // Handles any requests that don't match the ones above
