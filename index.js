@@ -4,6 +4,11 @@ const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 const morgan = require('morgan');
 
+const { Pool } = require('pg');
+const dbParams = require('./lib/db.js');
+const db = new Pool(dbParams);
+db.connect();
+
 const app = express();
 
 // Serve the static files from the React app
@@ -34,8 +39,16 @@ app.post('/api/getMenu', (req, res) => {
 app.post('/login', (req, res) => {
   const user = req.body.email;
   const password = req.body.password;
-  console.log(user);
-  console.log(password);
+  const queryConfig = {
+    text: `SELECT id FROM restaurants WHERE username = $1`,
+    values: [user]
+  }
+  db.query(queryConfig)
+    .then((response) => {
+      const restaurantId = response.rows[0].id;
+      req.session.user = restaurantId;
+      res.redirect(`/restaurant/${restaurantId}`);
+    });
   // if found restaurant, return the :ID from PG
   // set cookie using the ID
   // redirect to restaurant/:ID
