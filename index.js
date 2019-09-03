@@ -21,7 +21,7 @@ app.use(cookieSession({
 }));
 app.use(morgan('dev'));
 
-let order = ["Fries", "Burger"];
+let order = ["Fries", "Burger", "Milkshake"];
 
 // An api endpoint that returns a short list of items
 app.get('/api/getMenu', (req, res) => {
