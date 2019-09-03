@@ -36,26 +36,32 @@ app.post('/api/getMenu', (req, res) => {
   res.send('success');
 });
 
+app.get(`/api/getTables/:id`, (req, res) => {
+  const restaurantId = req.params.id;
+
+});
+
 app.post('/login', (req, res) => {
   const user = req.body.email;
   const password = req.body.password;
   const queryConfig = {
-    text: `SELECT id FROM restaurants WHERE username = $1`,
-    values: [user]
-  }
+    text: `SELECT id, password FROM restaurants WHERE username = $1 AND password = $2`,
+    values: [user, password]
+  };
   db.query(queryConfig)
     .then((response) => {
       const restaurantId = response.rows[0].id;
       req.session.user = restaurantId;
-      res.redirect(`/restaurant/${restaurantId}`);
+      res.send(`/restaurant/${restaurantId}`);
+    })
+    .catch((error) => {
+      res.send(`/admin`);
     });
-  // if found restaurant, return the :ID from PG
-  // set cookie using the ID
-  // redirect to restaurant/:ID
 });
 
 app.post('/logout', (req, res) => {
-  console.log('reached logout');
+  req.session = null;
+  res.send(`/admin`);
 });
 
 app.get('/restaurant/:id', (req, res) => {
