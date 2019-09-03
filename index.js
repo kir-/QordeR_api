@@ -3,6 +3,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 const morgan = require('morgan');
+const cors = require("cors");
 
 const { Pool } = require('pg');
 const dbParams = require('./lib/db.js');
@@ -15,6 +16,7 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'client/build')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(cors());
 app.use(cookieSession({
   name: 'session',
   keys: ['key1', 'key2']
