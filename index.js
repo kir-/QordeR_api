@@ -84,12 +84,22 @@ app.get('/:table_id', (req, res) => {
       const customers = response.rows[0].current_number_customers;
       if (customers == 0){
         const queryConfig = {
-          text: "INSERT into orders (table_id, completed) VALUES ($1, FALSE) ",
+          text: "INSERT into orders (table_id, completed) VALUES ($1, FALSE) RETURNING id",
           values: [req.params.table_id]
         }
+        db.query(queryConfig)
+          .then(
+            (response) => {
+              // const queryConfig = {
+              //   text: `UPDATE tables SET current_number_customers = ${1} WHERE id = $1`,
+              //   values: [req.params.table_id]
+              // }
+              // db.query(queryConfig)
+              res.send(response.rows[0])
+          })
       } else {
         const queryConfig = {
-          text: "SELECT id FROM orders JOIN tables on tables.id = orders.table_id WHERE table_number = $1",
+          text: "SELECT id FROM orders WHERE table_id = $1",
           values: [req.params.table_id]
         }
       }
