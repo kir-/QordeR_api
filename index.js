@@ -75,7 +75,7 @@ app.get('/restaurant/:id', (req, res) => {
 
 app.get('/:table_id', (req, res) => {
   const queryConfig = {
-    text: "SELECT current_number_customers, current_order FROM tables WHERE table_number = $1",
+    text: "SELECT current_number_customers, current_order FROM tables WHERE id = $1",
     values: [req.params.table_id]
   };
   db.query(queryConfig)
@@ -83,7 +83,15 @@ app.get('/:table_id', (req, res) => {
       // const restaurantId = response.rows[0].id;
       const customers = response.rows[0].current_number_customers;
       if (customers == 0){
-
+        const queryConfig = {
+          text: "INSERT into orders (table_id, completed) VALUES ($1, FALSE) ",
+          values: [req.params.table_id]
+        }
+      } else {
+        const queryConfig = {
+          text: "SELECT id FROM orders JOIN tables on tables.id = orders.table_id WHERE table_number = $1",
+          values: [req.params.table_id]
+        }
       }
       // req.session.user = restaurantId;
       // res.send(`/restaurant/${restaurantId}`);
