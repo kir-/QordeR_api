@@ -50,7 +50,7 @@ app.post('/login', (req, res) => {
     .then((response) => {
       const restaurantId = response.rows[0].id;
       req.universalCookies.set('user', restaurantId);
-      res.send(`/restaurant/${restaurantId}`);
+      res.send(`/admin/${restaurantId}`);
     })
     .catch((error) => {
       res.send(`/admin`);
@@ -58,7 +58,6 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
-  req.universalCookies.set(null);
   res.send(`/admin`);
 });
 
