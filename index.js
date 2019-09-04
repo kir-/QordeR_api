@@ -75,13 +75,16 @@ app.get('/restaurant/:id', (req, res) => {
 
 app.get('/:table_id', (req, res) => {
   const queryConfig = {
-    text: "SELECT current_number_customers FROM tables WHERE table_number = $1",
+    text: "SELECT current_number_customers, current_order FROM tables WHERE table_number = $1",
     values: [req.params.table_id]
   };
   db.query(queryConfig)
     .then((response) => {
       // const restaurantId = response.rows[0].id;
-      res.send(response.rows);
+      const customers = response.rows[0].current_number_customers;
+      if (customers == 0){
+
+      }
       // req.session.user = restaurantId;
       // res.send(`/restaurant/${restaurantId}`);
     })
