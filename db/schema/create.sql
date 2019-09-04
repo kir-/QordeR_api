@@ -15,7 +15,9 @@ CREATE Table restaurants (
 
 CREATE Table tables (
   id SERIAL PRIMARY KEY NOT NULL,
-  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE
+  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
+  current_number_customers INTEGER
+
 );
 
 CREATE Table categories (
@@ -41,8 +43,8 @@ CREATE Table orders (
   order_total_cents INTEGER NOT NULL,
   payment_total_cents INTEGER NOT NULL,
   time_ordered timestamp NOT NULL,
-  time_accepted timestamp NOT NULL,
-  time_completed timestamp NOT NULL
+  time_accepted timestamp,
+  time_completed timestamp
 );
 
 CREATE Table order_details (

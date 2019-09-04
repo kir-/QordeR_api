@@ -73,6 +73,20 @@ app.get('/restaurant/:id', (req, res) => {
   };
 });
 
+app.get('/:table_id', (req, res) => {
+  const queryConfig = {
+    text: "SELECT current_number_customers FROM tables WHERE id = $1",
+    values: [req.params.table_id]
+  };
+  db.query(queryConfig)
+    .then((response) => {
+      // const restaurantId = response.rows[0].id;
+      res.send(response.rows);
+      // req.session.user = restaurantId;
+      // res.send(`/restaurant/${restaurantId}`);
+    })
+});
+
 // Handles any requests that don't match the ones above
 app.get('*', (req, res) => {
   // res.sendFile(path.join(__dirname+'/client/build/index.html'));
