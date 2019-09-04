@@ -75,7 +75,7 @@ app.get('/restaurant/:id', (req, res) => {
 
 app.get('/:table_id', (req, res) => {
   const queryConfig = {
-    text: "SELECT current_number_customers, current_order FROM tables WHERE id = $1",
+    text: "SELECT current_number_customers FROM tables WHERE id = $1",
     values: [req.params.table_id]
   };
   db.query(queryConfig)
