@@ -15,7 +15,9 @@ CREATE Table restaurants (
 
 CREATE Table tables (
   id SERIAL PRIMARY KEY NOT NULL,
-  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE
+  restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
+  table_number INTEGER NOT NULL,
+  current_number_customers INTEGER
 );
 
 CREATE Table categories (
@@ -37,19 +39,21 @@ CREATE Table items (
 CREATE Table orders (
   id SERIAL PRIMARY KEY NOT NULL,
   table_id INTEGER REFERENCES tables(id) ON DELETE CASCADE,
-  quantity INTEGER NOT NULL,
-  order_total_cents INTEGER NOT NULL,
-  payment_total_cents INTEGER NOT NULL,
-  time_ordered timestamp NOT NULL,
-  time_accepted timestamp NOT NULL,
-  time_completed timestamp NOT NULL
+  order_total_cents INTEGER,
+  payment_total_cents INTEGER,
+  completed BOOLEAN,
+  time_started timestamp,
+  time_completed timestamp
 );
 
 CREATE Table order_details (
   id SERIAL PRIMARY KEY NOT NULL,
   item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
   order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
-  quantity INTEGER NOT NULL
+  quantity INTEGER NOT NULL,
+  time_ordered timestamp,
+  time_accepted timestamp,
+  time_completed timestamp
 );
 
 CREATE Table payments (

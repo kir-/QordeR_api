@@ -71,6 +71,46 @@ app.get('/restaurant/:id', (req, res) => {
   };
 });
 
+app.get('/:table_id', (req, res) => {
+  const queryConfig = {
+    text: "SELECT current_number_customers FROM tables WHERE id = $1",
+    values: [req.params.table_id]
+  };
+  db.query(queryConfig)
+    .then((response) => {
+      // const restaurantId = response.rows[0].id;
+      const customers = response.rows[0].current_number_customers;
+      console.log(customers)
+      if (customers == 0){
+        const queryConfig = {
+          text: "INSERT into orders (table_id, completed) VALUES ($1, FALSE) RETURNING id",
+          values: [req.params.table_id]
+        }
+        db.query(queryConfig)
+          .then(
+            (response) => {
+              const queryConfig = {
+                text: `UPDATE tables SET current_number_customers = 1 WHERE id = $1`,
+                values: [req.params.table_id]
+              }
+              db.query(queryConfig)
+              res.send(response.rows[0])
+          })
+      } else {
+        const queryConfig = {
+          text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
+          values: [req.params.table_id]
+        }
+        db.query(queryConfig)
+          .then((response)=>{
+            res.send(response.rows[0])
+          })
+      }
+      // req.session.user = restaurantId;
+      // res.send(`/restaurant/${restaurantId}`);
+    })
+});
+
 // Handles any requests that don't match the ones above
 app.get('*', (req, res) => {
   // res.sendFile(path.join(__dirname+'/client/build/index.html'));
