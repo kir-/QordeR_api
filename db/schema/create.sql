@@ -43,7 +43,7 @@ CREATE Table orders (
   payment_total_cents INTEGER,
   completed BOOLEAN,
   time_started timestamp,
-  time_completed timestamp,
+  time_completed timestamp
 );
 
 CREATE Table order_details (
