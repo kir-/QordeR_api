@@ -17,8 +17,7 @@ CREATE Table tables (
   id SERIAL PRIMARY KEY NOT NULL,
   restaurant_id INTEGER REFERENCES restaurants(id) ON DELETE CASCADE,
   table_number INTEGER NOT NULL,
-  current_number_customers INTEGER,
-  current_order INTEGER REFERENCES orders(id) ON DELETE CASCADE
+  current_number_customers INTEGER
 );
 
 CREATE Table categories (
