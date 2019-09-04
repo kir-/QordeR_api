@@ -91,18 +91,22 @@ app.get('/:table_id', (req, res) => {
         db.query(queryConfig)
           .then(
             (response) => {
-              // const queryConfig = {
-              //   text: `UPDATE tables SET current_number_customers = ${1} WHERE id = $1`,
-              //   values: [req.params.table_id]
-              // }
-              // db.query(queryConfig)
+              const queryConfig = {
+                text: `UPDATE tables SET current_number_customers = 1 WHERE id = $1`,
+                values: [req.params.table_id]
+              }
+              db.query(queryConfig)
               res.send(response.rows[0])
           })
       } else {
         const queryConfig = {
-          text: "SELECT id FROM orders WHERE table_id = $1",
+          text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
           values: [req.params.table_id]
         }
+        db.query(queryConfig)
+          .then((response)=>{
+            res.send(response.rows[0])
+          })
       }
       // req.session.user = restaurantId;
       // res.send(`/restaurant/${restaurantId}`);
