@@ -3,6 +3,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const cookiesMiddleware = require('universal-cookie-express');
+const cors = require("cors");
 
 const { Pool } = require('pg');
 const dbParams = require('./lib/db.js');
@@ -16,6 +17,7 @@ app.use(express.static(path.join(__dirname, 'client/build')));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(cors());
 app.use(cookiesMiddleware());
 app.use(morgan('dev'));
 
