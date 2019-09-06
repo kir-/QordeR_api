@@ -105,6 +105,11 @@ app.get('/:table_id', (req, res) => {
         }
         db.query(queryConfig)
           .then((response)=>{
+            const queryConfig = {
+              text: `UPDATE tables SET current_number_customers = 1 WHERE id = $1`,
+              values: [req.params.table_id]
+            }
+            db.query(queryConfig)
             res.send(response.rows[0])
           })
       }
