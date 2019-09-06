@@ -1,9 +1,8 @@
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
-const cookieSession = require('cookie-session');
 const morgan = require('morgan');
-const cors = require("cors");
+const cookiesMiddleware = require('universal-cookie-express');
 
 const { Pool } = require('pg');
 const dbParams = require('./lib/db.js');
@@ -14,13 +13,10 @@ const app = express();
 
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, 'client/build')));
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(cors());
-app.use(cookieSession({
-  name: 'session',
-  keys: ['key1', 'key2']
-}));
+app.use(cookiesMiddleware());
 app.use(morgan('dev'));
 
 let order = ["Fries", "Burger"];
@@ -38,9 +34,9 @@ app.post('/api/getMenu', (req, res) => {
   res.send('success');
 });
 
-app.get(`/api/getTables/:id`, (req, res) => {
-  const restaurantId = req.params.id;
-
+app.get('/api/getTables/:restaurantId', (req, res) => {
+  const restaurantId = req.params.restaurantId;
+  console.log(restaurantId);
 });
 
 app.post('/login', (req, res) => {
@@ -53,8 +49,8 @@ app.post('/login', (req, res) => {
   db.query(queryConfig)
     .then((response) => {
       const restaurantId = response.rows[0].id;
-      req.session.user = restaurantId;
-      res.send(`/restaurant/${restaurantId}`);
+      req.universalCookies.set('user', restaurantId);
+      res.send(`/admin/${restaurantId}`);
     })
     .catch((error) => {
       res.send(`/admin`);
@@ -62,7 +58,6 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
-  req.session = null;
   res.send(`/admin`);
 });
 
