@@ -35,8 +35,28 @@ app.post('/api/getMenu', (req, res) => {
 });
 
 app.get('/api/getTables/:restaurantId', (req, res) => {
-  const restaurantId = req.params.restaurantId;
-  console.log(restaurantId);
+  const queryConfig = {
+    text: `SELECT id FROM tables WHERE restaurant_id = $1`,
+    values: [req.params.restaurantId]
+  };
+  db.query(queryConfig)
+    .then((response) => {
+      res.send(response.rows);
+    })
+    .catch((error) => {
+      res.send(error);
+    });
+});
+
+app.get('/api/getOrder/:tableId', (req, res) => {
+  const queryConfig = {
+    text: `SELECT id AS order_id FROM orders WHERE table_id = $1 AND completed = FALSE`,
+    values: [req.params.tableId]
+  };
+  db.query(queryConfig)
+    .then((response) => {
+      res.send(response.rows);
+    });
 });
 
 app.post('/login', (req, res) => {
