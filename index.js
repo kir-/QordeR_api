@@ -15,7 +15,7 @@ const app = express();
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, 'client/build')));
 
-// app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
 app.use(cookiesMiddleware());
@@ -70,7 +70,7 @@ app.get('/restaurant/:id', (req, res) => {
   };
 });
 
-app.get('/:table_id', (req, res) => {
+app.get('/:table_id', (req, res) => { //creates new order is table is empty or adds to current order
   const queryConfig = {
     text: "SELECT current_number_customers FROM tables WHERE id = $1",
     values: [req.params.table_id]
@@ -115,7 +115,7 @@ app.get('/:table_id', (req, res) => {
     })
 });
 
-app.post('/:table_id/order', (req, res) => {
+app.post('/:table_id/order', (req, res) => { // accepts array called orders [{item_id, quantity}] and adds to database
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
