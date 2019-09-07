@@ -46,7 +46,7 @@ CREATE Table orders (
   time_completed timestamp
 );
 
-CREATE Table order_details (
+CREATE Table , (
   id SERIAL PRIMARY KEY NOT NULL,
   item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
   order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
