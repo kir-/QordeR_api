@@ -115,6 +115,31 @@ app.get('/:table_id', (req, res) => {
     })
 });
 
+app.post('/:table_id/order', (req, res) => {
+  const queryConfig = {
+    text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
+    values: [req.params.table_id]
+  }
+  console.log(`table id: ${req.params.table_id}`);
+  db.query(queryConfig)
+    .then((response)=>{
+      console.log(`order id: ${response.rows[0].id}`);
+      for (item of req.body.order) {
+        const queryConfig = {
+          text: "INSERT into order_details (item_id, order_id, quantity) VALUES ($1, $2, $3)",
+          values: [item.id, response.rows[0].id, item.quantity]
+        }
+        db.query(queryConfig)
+          .then(()=>{
+            console.log(`item id: ${item.id}, item quantity: ${item.quantity}`);
+            if (req.body.order[req.body.order.length - 1].id == item.id){
+              res.send("success");
+            }
+          })
+      }
+    })
+})
+
 // Handles any requests that don't match the ones above
 app.get('*', (req, res) => {
   // res.sendFile(path.join(__dirname+'/client/build/index.html'));
