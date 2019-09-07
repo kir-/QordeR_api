@@ -37,8 +37,57 @@ app.post('/api/getMenu', (req, res) => {
 });
 
 app.get('/api/getTables/:restaurantId', (req, res) => {
-  const restaurantId = req.params.restaurantId;
-  console.log(restaurantId);
+  const queryConfig = {
+    text: `SELECT id FROM tables WHERE restaurant_id = $1`,
+    values: [req.params.restaurantId]
+  };
+  db.query(queryConfig)
+    .then((response) => {
+      res.send(response.rows);
+    })
+    .catch((error) => {
+      res.send(error);
+    });
+});
+
+app.get('/api/getActiveOrderItems/:tableId', (req, res) => {
+  const queryConfig = {
+    text: `SELECT id AS order_id FROM orders WHERE table_id = $1 AND completed = FALSE`,
+    values: [req.params.tableId]
+  };
+  db.query(queryConfig)
+    .then((response) => {
+      const queryConfig = {
+        text: `SELECT * FROM order_details WHERE order_id = $1`,
+        values: [response.rows[0].order_id]
+      };
+      db.query(queryConfig)
+        .then((response) => {
+          const orderDetails = response.rows;
+          const itemIds = response.rows.map((entry) => {
+            return entry.item_id;
+          });
+          const queryConfig = {
+            text: `SELECT id, name FROM items WHERE id IN (${itemIds.map((itemId, index) => {
+              return `$${index + 1}`;
+            }).join(', ')})`,
+            values: itemIds
+          };
+          db.query(queryConfig)
+            .then((response) => {
+              const orderItems = response.rows;
+              orderDetails.forEach((orderDetail) => {
+                orderDetail["item_name"] = (orderItems.find((orderItem) => {
+                  return orderItem.id === orderDetail.item_id;
+                }).name);
+              });
+              res.send(orderDetails);
+            });
+        });
+    })
+    .catch((error) => {
+      res.send(error);
+    });
 });
 
 app.post('/login', (req, res) => {
@@ -79,27 +128,27 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
     .then((response) => {
       // const restaurantId = response.rows[0].id;
       const customers = response.rows[0].current_number_customers;
-      console.log(customers)
-      if (customers == 0){
+      console.log(customers);
+      if (customers === 0) {
         const queryConfig = {
           text: "INSERT into orders (table_id, completed) VALUES ($1, FALSE) RETURNING id",
           values: [req.params.table_id]
-        }
+        };
         db.query(queryConfig)
           .then(
             (response) => {
               const queryConfig = {
                 text: `UPDATE tables SET current_number_customers = 1 WHERE id = $1`,
                 values: [req.params.table_id]
-              }
-              db.query(queryConfig)
-              res.send(response.rows[0])
-          })
+              };
+              db.query(queryConfig);
+              res.send(response.rows[0]);
+            });
       } else {
         const queryConfig = {
           text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
           values: [req.params.table_id]
-        }
+        };
         db.query(queryConfig)
           .then((response)=>{
             const queryConfig = {
@@ -112,7 +161,7 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
       }
       // req.session.user = restaurantId;
       // res.send(`/restaurant/${restaurantId}`);
-    })
+    });
 });
 
 app.post('/:table_id/order', (req, res) => { // accepts array called orders [{item_id, quantity}] and adds to database

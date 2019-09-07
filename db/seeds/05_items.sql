@@ -1,0 +1,10 @@
+INSERT INTO items (category_id, name, price_cents, image, active) VALUES (1, 'Bubble Tea', 4990, '/', 'true');
+INSERT INTO items (category_id, name, price_cents, image, active) VALUES (1, 'Sushi', 4990, '/', 'true');
+INSERT INTO items (category_id, name, price_cents, image, active) VALUES (1, 'Rice', 4990, '/', 'true');
+INSERT INTO items (category_id, name, price_cents, image, active) VALUES (1, 'Miso Soup', 4990, '/', 'true');
+INSERT INTO items (category_id, name, price_cents, image, active) VALUES (1, 'Pancake', 4990, '/', 'true');
+INSERT INTO items (category_id, name, price_cents, image, active) VALUES (1, 'Waffle', 4990, '/', 'true');
+INSERT INTO items (category_id, name, price_cents, image, active) VALUES (1, 'Egg', 4990, '/', 'true');
+INSERT INTO items (category_id, name, price_cents, image, active) VALUES (1, 'Scrambled Egg', 4990, '/', 'true');
+INSERT INTO items (category_id, name, price_cents, image, active) VALUES (1, 'Coffee', 4990, '/', 'true');
+INSERT INTO items (category_id, name, price_cents, image, active) VALUES (1, 'London Fog', 4990, '/', 'true');
