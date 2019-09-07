@@ -124,6 +124,7 @@ app.post('/:table_id/order', (req, res) => {
   db.query(queryConfig)
     .then((response)=>{
       console.log(`order id: ${response.rows[0].id}`);
+      console.log(`body: ${req.body}`);
       for (item of req.body.order) {
         const queryConfig = {
           text: "INSERT into order_details (item_id, order_id, quantity) VALUES ($1, $2, $3)",
