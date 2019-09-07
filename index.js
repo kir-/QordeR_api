@@ -3,6 +3,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const cookiesMiddleware = require('universal-cookie-express');
+const cors = require("cors");
 
 const { Pool } = require('pg');
 const dbParams = require('./lib/db.js');
@@ -16,6 +17,7 @@ app.use(express.static(path.join(__dirname, 'client/build')));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(cors());
 app.use(cookiesMiddleware());
 app.use(morgan('dev'));
 
@@ -117,7 +119,7 @@ app.get('/restaurant/:id', (req, res) => {
   };
 });
 
-app.get('/:table_id', (req, res) => {
+app.get('/:table_id', (req, res) => { //creates new order is table is empty or adds to current order
   const queryConfig = {
     text: "SELECT current_number_customers FROM tables WHERE id = $1",
     values: [req.params.table_id]
@@ -148,14 +150,45 @@ app.get('/:table_id', (req, res) => {
           values: [req.params.table_id]
         };
         db.query(queryConfig)
-          .then((response) => {
-            res.send(response.rows[0]);
-          });
+          .then((response)=>{
+            const queryConfig = {
+              text: `UPDATE tables SET current_number_customers = ${customers + 1} WHERE id = $1`,
+              values: [req.params.table_id]
+            }
+            db.query(queryConfig)
+            res.send(response.rows[0])
+          })
       }
       // req.session.user = restaurantId;
       // res.send(`/restaurant/${restaurantId}`);
     });
 });
+
+app.post('/:table_id/order', (req, res) => { // accepts array called orders [{item_id, quantity}] and adds to database
+  const queryConfig = {
+    text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
+    values: [req.params.table_id]
+  }
+  console.log(`table id: ${req.params.table_id}`);
+  db.query(queryConfig)
+    .then((response)=>{
+      console.log(`order id: ${response.rows[0].id}`);
+      console.log(`body: ${req.body.order}`);
+      for (item of req.body.order) {
+        const queryConfig = {
+          text: "INSERT into order_details (item_id, order_id, quantity) VALUES ($1, $2, $3)",
+          values: [item.id, response.rows[0].id, item.quantity]
+        }
+        db.query(queryConfig)
+          .then(()=>{
+            console.log(`item id: ${item.id}, item quantity: ${item.quantity}`);
+            if (req.body.order[req.body.order.length - 1].id == item.id){
+              res.send("success");
+            }
+          })
+      }
+    })
+})
 
 // Handles any requests that don't match the ones above
 app.get('*', (req, res) => {
