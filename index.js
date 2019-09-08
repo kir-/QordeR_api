@@ -36,11 +36,18 @@ app.post('/api/getMenu', (req, res) => {
 
 app.get('/api/getTables/:restaurantId', (req, res) => {
   const queryConfig = {
-    text: `SELECT id FROM tables WHERE restaurant_id = $1`,
+    text: `
+      SELECT id, completed FROM (
+        tables LEFT JOIN (
+          SELECT table_id, completed FROM orders WHERE completed = 'f'
+        ) AS temp0 ON tables.id = table_id
+      ) AS temp1 WHERE restaurant_id = $1;
+    `,
     values: [req.params.restaurantId]
   };
   db.query(queryConfig)
     .then((response) => {
+      console.log(response.rows);
       res.send(response.rows);
     })
     .catch((error) => {
@@ -88,72 +95,47 @@ app.get('/api/getActiveOrderItems/:tableId', (req, res) => {
     });
 });
 
-app.post('/login', (req, res) => {
-  const user = req.body.email;
-  const password = req.body.password;
+app.post('/api/upgradeStatus/:orderId', (req, res) => {
+  const orderId = req.params.orderId;
   const queryConfig = {
-    text: `SELECT id, password FROM restaurants WHERE username = $1 AND password = $2`,
-    values: [user, password]
+    text: "SELECT time_accepted FROM order_details WHERE id = $1",
+    values: [orderId]
   };
   db.query(queryConfig)
     .then((response) => {
-      const restaurantId = response.rows[0].id;
-      req.universalCookies.set('user', restaurantId);
-      res.send(`/admin/${restaurantId}`);
-    })
-    .catch((error) => {
-      res.send(`/admin`);
-    });
-});
-
-app.post('/logout', (req, res) => {
-  res.send(`/admin`);
-});
-
-app.get('/restaurant/:id', (req, res) => {
-  const queryConfig = {
-    text: "SELECT * FROM tables WHERE restaurant_id = $1",
-    values: [req.params.id]
-  };
-});
-
-app.get('/:table_id', (req, res) => {
-  const queryConfig = {
-    text: "SELECT current_number_customers FROM tables WHERE id = $1",
-    values: [req.params.table_id]
-  };
-  db.query(queryConfig)
-    .then((response) => {
-      // const restaurantId = response.rows[0].id;
-      const customers = response.rows[0].current_number_customers;
-      console.log(customers);
-      if (customers === 0) {
-        const queryConfig = {
-          text: "INSERT into orders (table_id, completed) VALUES ($1, FALSE) RETURNING id",
-          values: [req.params.table_id]
-        };
-        db.query(queryConfig)
-          .then(
-            (response) => {
-              const queryConfig = {
-                text: `UPDATE tables SET current_number_customers = 1 WHERE id = $1`,
-                values: [req.params.table_id]
-              };
-              db.query(queryConfig);
-              res.send(response.rows[0]);
-            });
-      } else {
-        const queryConfig = {
-          text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
-          values: [req.params.table_id]
-        };
+      console.log(response);
+      const queryConfig = {
+        text: '',
+        values: []
+      };
+      if (!response.rows[0].time_accepted) {
+        queryConfig.text = "UPDATE order_details SET time_accepted=NOW() WHERE id = $1 RETURNING time_accepted";
+        queryConfig.values = [orderId];
         db.query(queryConfig)
           .then((response) => {
-            res.send(response.rows[0]);
+            console.log(response);
+            res.send('success: time_accepted');
+          })
+          .catch((error) => {
+            console.error(error);
+            res.send('failure: time_accepted');
+          });
+      } else if (!response.rows[0].time_completed) {
+        queryConfig.text = "UPDATE order_details SET time_completed=NOW() WHERE id = $1 RETURNING time_completed";
+        queryConfig.values = [orderId];
+        db.query(queryConfig)
+          .then((response) => {
+            console.log(response);
+            res.send('success: time_completed');
+          })
+          .catch((error) => {
+            console.error(error);
+            res.send('failure: time_completed');
           });
       }
-      // req.session.user = restaurantId;
-      // res.send(`/restaurant/${restaurantId}`);
+    })
+    .catch((error) => {
+      console.error(error);
     });
 });
 
