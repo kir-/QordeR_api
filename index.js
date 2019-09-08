@@ -37,8 +37,108 @@ app.post('/api/getMenu', (req, res) => {
 });
 
 app.get('/api/getTables/:restaurantId', (req, res) => {
-  const restaurantId = req.params.restaurantId;
-  console.log(restaurantId);
+  const queryConfig = {
+    text: `
+      SELECT id, completed FROM (
+        tables LEFT JOIN (
+          SELECT table_id, completed FROM orders WHERE completed = 'f'
+        ) AS temp0 ON tables.id = table_id
+      ) AS temp1 WHERE restaurant_id = $1;
+    `,
+    values: [req.params.restaurantId]
+  };
+  db.query(queryConfig)
+    .then((response) => {
+      console.log(response.rows);
+      res.send(response.rows);
+    })
+    .catch((error) => {
+      res.send(error);
+    });
+});
+
+app.get('/api/getActiveOrderItems/:tableId', (req, res) => {
+  const queryConfig = {
+    text: `SELECT id AS order_id FROM orders WHERE table_id = $1 AND completed = FALSE`,
+    values: [req.params.tableId]
+  };
+  db.query(queryConfig)
+    .then((response) => {
+      const queryConfig = {
+        text: `SELECT * FROM order_details WHERE order_id = $1`,
+        values: [response.rows[0].order_id]
+      };
+      db.query(queryConfig)
+        .then((response) => {
+          const orderDetails = response.rows;
+          const itemIds = response.rows.map((entry) => {
+            return entry.item_id;
+          });
+          const queryConfig = {
+            text: `SELECT id, name FROM items WHERE id IN (${itemIds.map((itemId, index) => {
+              return `$${index + 1}`;
+            }).join(', ')})`,
+            values: itemIds
+          };
+          db.query(queryConfig)
+            .then((response) => {
+              const orderItems = response.rows;
+              orderDetails.forEach((orderDetail) => {
+                orderDetail["item_name"] = (orderItems.find((orderItem) => {
+                  return orderItem.id === orderDetail.item_id;
+                }).name);
+              });
+              res.send(orderDetails);
+            });
+        });
+    })
+    .catch((error) => {
+      res.send(error);
+    });
+});
+
+app.post('/api/upgradeStatus/:orderId', (req, res) => {
+  const orderId = req.params.orderId;
+  const queryConfig = {
+    text: "SELECT time_accepted FROM order_details WHERE id = $1",
+    values: [orderId]
+  };
+  db.query(queryConfig)
+    .then((response) => {
+      console.log(response);
+      const queryConfig = {
+        text: '',
+        values: []
+      };
+      if (!response.rows[0].time_accepted) {
+        queryConfig.text = "UPDATE order_details SET time_accepted=NOW() WHERE id = $1 RETURNING time_accepted";
+        queryConfig.values = [orderId];
+        db.query(queryConfig)
+          .then((response) => {
+            console.log(response);
+            res.send('success: time_accepted');
+          })
+          .catch((error) => {
+            console.error(error);
+            res.send('failure: time_accepted');
+          });
+      } else if (!response.rows[0].time_completed) {
+        queryConfig.text = "UPDATE order_details SET time_completed=NOW() WHERE id = $1 RETURNING time_completed";
+        queryConfig.values = [orderId];
+        db.query(queryConfig)
+          .then((response) => {
+            console.log(response);
+            res.send('success: time_completed');
+          })
+          .catch((error) => {
+            console.error(error);
+            res.send('failure: time_completed');
+          });
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+    });
 });
 
 app.post('/login', (req, res) => {
@@ -79,67 +179,67 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
     .then((response) => {
       // const restaurantId = response.rows[0].id;
       const customers = response.rows[0].current_number_customers;
-      console.log(customers)
-      if (customers == 0){
+      console.log(customers);
+      if (customers === 0) {
         const queryConfig = {
           text: "INSERT into orders (table_id, completed) VALUES ($1, FALSE) RETURNING id",
           values: [req.params.table_id]
-        }
+        };
         db.query(queryConfig)
           .then(
             (response) => {
               const queryConfig = {
                 text: `UPDATE tables SET current_number_customers = 1 WHERE id = $1`,
                 values: [req.params.table_id]
-              }
-              db.query(queryConfig)
-              res.send(response.rows[0])
-          })
+              };
+              db.query(queryConfig);
+              res.send(response.rows[0]);
+            });
       } else {
         const queryConfig = {
           text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
           values: [req.params.table_id]
-        }
+        };
         db.query(queryConfig)
-          .then((response)=>{
+          .then((response) => {
             const queryConfig = {
               text: `UPDATE tables SET current_number_customers = ${customers + 1} WHERE id = $1`,
               values: [req.params.table_id]
-            }
-            db.query(queryConfig)
-            res.send(response.rows[0])
-          })
+            };
+            db.query(queryConfig);
+            res.send(response.rows[0]);
+          });
       }
       // req.session.user = restaurantId;
       // res.send(`/restaurant/${restaurantId}`);
-    })
+    });
 });
 
 app.post('/:table_id/order', (req, res) => { // accepts array called orders [{item_id, quantity}] and adds to database
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
-  }
+  };
   console.log(`table id: ${req.params.table_id}`);
   db.query(queryConfig)
-    .then((response)=>{
+    .then((response) => {
       console.log(`order id: ${response.rows[0].id}`);
       console.log(`body: ${req.body.order}`);
-      for (item of req.body.order) {
+      for (let item of req.body.order) {
         const queryConfig = {
           text: "INSERT into order_details (item_id, order_id, quantity) VALUES ($1, $2, $3)",
           values: [item.id, response.rows[0].id, item.quantity]
-        }
+        };
         db.query(queryConfig)
-          .then(()=>{
+          .then(() => {
             console.log(`item id: ${item.id}, item quantity: ${item.quantity}`);
-            if (req.body.order[req.body.order.length - 1].id == item.id){
+            if (req.body.order[req.body.order.length - 1].id === item.id) {
               res.send("success");
             }
-          })
+          });
       }
-    })
-})
+    });
+});
 
 // Handles any requests that don't match the ones above
 app.get('*', (req, res) => {

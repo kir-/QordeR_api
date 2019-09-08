@@ -1,0 +1,13 @@
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (1, 6, 2, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (8, 6, 1, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (3, 6, 3, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (7, 6, 2, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (9, 6, 1, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (2, 6, 1, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (1, 7, 2, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (3, 7, 1, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (6, 7, 3, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (7, 7, 2, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (9, 7, 1, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (2, 7, 1, NOW());
+INSERT INTO order_details (item_id, order_id, quantity, time_ordered) VALUES (7, 7, 1, NOW());
