@@ -151,11 +151,13 @@ app.post('/login', (req, res) => {
   db.query(queryConfig)
     .then((response) => {
       const restaurantId = response.rows[0].id;
-      req.universalCookies.set('user', restaurantId);
-      res.send(`/admin/${restaurantId}`);
+      // req.universalCookies.set('user', restaurantId);
+      // res.send(`/admin/${restaurantId}`);
+      console.log(`restaurantId: ${restaurantId}`)
+      res.send(restaurantId);
     })
     .catch((error) => {
-      res.send(`/admin`);
+      res.send("error");
     });
 });
 
@@ -239,6 +241,10 @@ app.post('/:table_id/order', (req, res) => { // accepts array called orders [{it
           });
       }
     });
+});
+
+app.get('/api/:restaurant_id/menu', (req, res) => {
+
 });
 
 // Handles any requests that don't match the ones above
