@@ -51,6 +51,8 @@ CREATE Table order_details (
   item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
   order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
   quantity INTEGER NOT NULL,
+  paid BOOLEAN,
+  divide INTEGER,
   time_ordered timestamp,
   time_accepted timestamp,
   time_completed timestamp
