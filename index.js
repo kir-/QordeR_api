@@ -243,9 +243,83 @@ app.post('/:table_id/order', (req, res) => { // accepts array called orders [{it
     });
 });
 
-app.get('/api/:restaurant_id/menu', (req, res) => {
+app.get('/:table_id/order', (req, res)=>{
+  const queryConfig = {
+    text: "SELECT item_id, quantity, items.name, items.price_cents FROM order_details JOIN items ON items.id = item_id WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
+    values: [req.params.table_id]
+  };
+  db.query(queryConfig)
+    .then(response=>{
+      res.send(response.rows)
+    })
+})
 
+app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
+  const queryConfig = {
+    text: "SELECT name, id FROM categories WHERE restaurant_id = $1",
+    values: [req.params.restaurant_id]
+  };
+  db.query(queryConfig)
+  .then((response)=>{
+    let categories = response.rows;
+    const queryConfig = {
+      text: "SELECT * FROM categories JOIN items ON categories.id = items.category_id WHERE restaurant_id = $1",
+      values: [req.params.restaurant_id]
+    };
+    db.query(queryConfig)
+      .then((response)=>{
+        let menu = [];
+        for (category of categories){
+          let category_items = response.rows.filter(item=> item.category_id === category.id)
+          menu.push({category: category.name, items: category_items})
+        }
+        res.send(menu);
+      })
+  });
 });
+
+app.post('/api/:restaurant_id/menu', (req, res)=>{//recieves [{category,items}, {category,items}] adds it to database and sets old items active to false
+  const queryConfig = {
+    text: "UPDATE items SET active = FALSE FROM categories WHERE categories.restaurant_id = $1",
+    values: [req.params.restaurant_id]
+  };
+  db.query(queryConfig)
+    .then(()=>{
+      const queryConfig = {
+        text: "UPDATE categories SET active = FALSE WHERE restaurant_id = $1",
+        values: [req.params.restaurant_id]
+      };
+      db.query(queryConfig)
+        .then(()=>{
+          let category_string = 'INSERT INTO categories (restaurant_id, name, active) VALUES '
+          for (category of req.body.menu) {
+            category_string += `( $1, '${category.category}', true),`
+          }
+          category_string = category_string.slice(0,-1)
+          category_string += ' RETURNING id'
+          const queryConfig = {
+            text: category_string,
+            values: [req.params.restaurant_id]
+          };
+          db.query(queryConfig)
+            .then((response)=>{
+              for (let index = 0; index < response.rows.length; index ++){
+                let item_string = 'INSERT INTO items (category_id, name, price_cents, image, active) VALUES '
+                for (item of req.body.menu[index].items) {
+                  item_string += `('${response.rows[index].id}', '${item.name}', '${item.price_cents}', '${item.image}' ,true),`
+                }
+                item_string = item_string.slice(0,-1)
+                db.query(item_string)
+                  .then(()=>{
+                    if (index === response.rows.length-1){
+                      res.send("success")
+                    }
+                  })
+              }
+            })
+        })
+    })
+})
 
 // Handles any requests that don't match the ones above
 app.get('*', (req, res) => {
