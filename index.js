@@ -154,7 +154,7 @@ app.post('/login', (req, res) => {
       // req.universalCookies.set('user', restaurantId);
       // res.send(`/admin/${restaurantId}`);
       console.log(`restaurantId: ${restaurantId}`)
-      res.send(`${restaurantId}`);
+      res.send(`/admin/${restaurantId}`);
     })
     .catch((error) => {
       res.send("error");
