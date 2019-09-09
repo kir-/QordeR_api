@@ -57,7 +57,7 @@ app.get('/api/getTables/:restaurantId', (req, res) => {
     });
 });
 
-app.get('/api/getActiveOrderItems/:tableId', (req, res) => {
+app.get('/api/getActiveTableItems/:tableId', (req, res) => {
   const queryConfig = {
     text: `SELECT id AS order_id FROM orders WHERE table_id = $1 AND completed = FALSE`,
     values: [req.params.tableId]
