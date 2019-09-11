@@ -12,14 +12,38 @@ db.connect();
 
 const app = express();
 
-const wss = new WebSocket.Server({ port: 3001 });
+const wss = new WebSocket.Server({ server: app });
+// const wss = new WebSocket.Server({ port: 3001 });
 
-const paid = function(table_id) {
+// wss.on('upgrade', function upgrade(request, socket, head) {
+//   const pathname = url.parse(request.url).pathname;
+//   console.log('checking if upgrade')
+//   if (pathname === '/upgrade') {
+//     wss.handleUpgrade(request, socket, head, function done(ws) {
+//       console.log('emittiing')
+//       wss.emit('connection', ws, request);
+//     });
+//   } else {
+//     console.log('not upgrade')
+//     socket.destroy();
+//   }
+// });
+
+wss.on('connection', function connection(ws) {
+  console.log('yay')
+  ws.send('something');
+});
+
+const paid = function(table_id, success) {
+  console.log(wss.clients)
   wss.clients.forEach(function eachClient(client) {
+    console.log(client);
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify({
-        table_id: table_id
+        table_id: table_id,
+        success: success
       }));
+      console.log('sent')
     }
   });
 }
@@ -223,7 +247,7 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
     });
 });
 
-app.post('/:table_id/order', (req, res) => { // accepts array called orders [{item_id, quantity}] and adds to database
+app.post('/:table_id/order', (req, res) => { // accepts array called order [{item_id, quantity}] and adds to database
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
@@ -235,8 +259,8 @@ app.post('/:table_id/order', (req, res) => { // accepts array called orders [{it
       console.log(`body: ${req.body.order}`);
       for (let item of req.body.order) {
         const queryConfig = {
-          text: "INSERT into order_details (item_id, order_id, quantity) VALUES ($1, $2, $3)",
-          values: [item.id, response.rows[0].id, item.quantity]
+          text: "INSERT into order_details (item_id, order_id, quantity, paid, time_ordered) VALUES ((SELECT id FROM items WHERE name = $1), $2, $3, FALSE, NOW())",
+          values: [item.name, response.rows[0].id, item.quantity]
         };
         db.query(queryConfig)
           .then(() => {
@@ -248,6 +272,18 @@ app.post('/:table_id/order', (req, res) => { // accepts array called orders [{it
       }
     });
 });
+
+app.post('/:table_id/ordermore', (req, res) => {
+  const queryConfig = {
+    text: "UPDATE tables SET current_number_customers = ((SELECT current_number_customers FROM tables WHERE id = $1) -1) WHERE id = $1",
+    values: [req.params.table_id]
+  };
+  console.log('test')
+  db.query(queryConfig)
+    .then((response) => {
+      res.send('success')
+    })
+})
 
 app.get('/:table_id/order', (req, res) => {
   const queryConfig = {
@@ -333,6 +369,27 @@ app.post('/api/:restaurant_id/menu', (req, res) => { //recieves [{category,items
     });
 });
 
+app.post('/calculate_payment', (req, res) => {
+  let items = req.body.items;
+  let price = 0;
+  itemString = ''
+  for (item of items) {
+    itemString += item + ','
+  }
+  itemString = itemString.slice(0, -1);
+  const queryConfig = {
+    text: "SELECT price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE id IN ($1)",
+    values: [itemString]
+  };
+  db.query(queryConfig)
+    .then((response) => {
+      for (item of response.rows[0]) {
+        price += (item.price_cents * item.quantity) / divide
+      }
+      res.send((price / 100).toFixed(2))
+    })
+})
+
 app.post('/:table_id/pay', (req, res) => { // recieves array of order_datails.id [1,3,5] and updates in database
   let paid_items = req.body.items;
   const queryConfig = {
@@ -362,10 +419,8 @@ app.post('/:table_id/pay', (req, res) => { // recieves array of order_datails.id
               db.query(queryConfig)
                 .then((response) => {
                   if (response.rows.length === 0) {
-                    paid(req.params.table_id)
-                    res.send(JSON.stringify({
-                      table_id: req.params.table_id
-                    }));
+                    paid(req.params.table_id, true)
+                    res.send("success");
                   } else {
                     // console.log(response.rows)
                     const queryConfig = {
@@ -382,7 +437,8 @@ app.post('/:table_id/pay', (req, res) => { // recieves array of order_datails.id
                           .then((response) => {
                             console.log(response.rows[0].payment_customers + " " + response.rows[0].current_number_customers)
                             if (response.rows[0].payment_customers === response.rows[0].current_number_customers) {
-                              res.send("someone fucked up")
+                              paid(req.params.table_id, false)
+                              res.send("please try again")
                             } else {
                               res.send("not paid")
                             }
@@ -397,10 +453,12 @@ app.post('/:table_id/pay', (req, res) => { // recieves array of order_datails.id
 })
 
 // Handles any requests that don't match the ones above
-app.get('*', (req, res) => {
-  // res.sendFile(path.join(__dirname+'/client/build/index.html'));
-  res.send("nah");
-});
+// app.get('*', (req, res) => {
+//   // res.sendFile(path.join(__dirname+'/client/build/index.html'));
+//   console.log('not available')
+//   // res.send(101)
+//   res.send("nah");
+// });
 
 const port = process.env.PORT || 5000;
 app.listen(port);
