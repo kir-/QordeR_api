@@ -12,9 +12,9 @@ db.connect();
 
 const app = express();
 
-// const wss = new WebSocket.Server({ server: app });
-const wss = new WebSocket.Server({ port: 3001 });
 
+const wss = new WebSocket.Server({ app });
+// const wss = new WebSocket.Server({ port: 3001 });
 
 // wss.on('upgrade', function upgrade(request, socket, head) {
 //   const pathname = url.parse(request.url).pathname;
@@ -464,8 +464,8 @@ app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1
 app.get('*', (req, res) => {
   // res.sendFile(path.join(__dirname+'/client/build/index.html'));
   console.log('not available')
-  res.send(101);
-//   res.send("nah");
+  // res.send(101)
+  res.send("nah");
 });
 
 const port = process.env.PORT || 5000;
