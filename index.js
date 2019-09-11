@@ -257,13 +257,12 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{ite
 
 app.post('/:order_id/ordermore',(req,res)=>{
   const queryConfig = {
-    text: "UPDATE tables SET current_number_customers = ((SELECT current_number_customers FROM tables WHERE id = (SELECT table_id FROM orders WHERE id = $1))-1) WHERE id = (SELECT table_id FROM orders WHERE id = $1) RETURNING id",
+    text: "UPDATE tables SET current_number_customers = ((SELECT current_number_customers FROM tables WHERE id = $1) -1) WHERE id = $1)",
     values: [req.params.order_id]
   };
   db.query(queryConfig)
     .then((response)=>{
-      console.log(response.rows[0])
-      res.send(response.rows[0])
+      res.send('success')
     })
 })
 
