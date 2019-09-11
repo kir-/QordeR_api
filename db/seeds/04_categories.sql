@@ -1,5 +1,9 @@
-INSERT INTO categories (restaurant_id, name, active) VALUES (1, 'Appetizers', 'true');
-INSERT INTO categories (restaurant_id, name, active) VALUES (1, 'Tempura', 'true');
-INSERT INTO categories (restaurant_id, name, active) VALUES (1, 'Udon', 'true');
-INSERT INTO categories (restaurant_id, name, active) VALUES (1, 'Carte', 'true');
-INSERT INTO categories (restaurant_id, name, active) VALUES (1, 'Maki', 'true');
+INSERT INTO categories (restaurant_id, name, active, image) VALUES (1, 'Appetizers', 'true', 'https://pizzazzerie.com/wp-content/uploads/2018/11/thanksgiving-appetizer-500x500.jpg');
+INSERT INTO categories (restaurant_id, name, active, image) VALUES (1, 'Tempura', 'true', 'https://5.imimg.com/data5/DR/WG/MY-2125757/tempura-batter-mix-500x500.jpg');
+INSERT INTO categories (restaurant_id, name, active, image) VALUES (1, 'Udon', 'true', 'https://www.wandercooks.com/wp-content/uploads/2019/04/udon-noodle-soup-recipe-ft-500x500.jpg');
+INSERT INTO categories (restaurant_id, name, active, image) VALUES (1, 'Carte', 'true', 'https://www.dinneratthezoo.com/wp-content/uploads/2018/06/slow-cooker-teriyaki-chicken-1-500x500.jpg');
+INSERT INTO categories (restaurant_id, name, active, image) VALUES (1, 'Maki', 'true', 'http://sushibar-kh.com/wp-content/uploads/2016/01/SHIN-KOU-MAKI.jpg');
+INSERT INTO categories (restaurant_id, name, active, image) VALUES (1, 'Temaki', 'true', 'https://howdaily.com/wp-content/uploads/2018/07/temaki-roll-500x500.jpg');
+INSERT INTO categories (restaurant_id, name, active, image) VALUES (1, 'Nigiri', 'true', 'https://images.japancentre.com/recipes/pics/217/main/photo_Nigiri-Sushi.jpg?1469572964');
+INSERT INTO categories (restaurant_id, name, active, image) VALUES (1, 'Sashimi', 'true', 'https://yuhoki.co.uk/image/cache/data/food/sushi_sashimi/45-salmon-sashimi-93-500x500.jpg');
+INSERT INTO categories (restaurant_id, name, active, image) VALUES (1, 'Combo', 'true', 'http://www.wabisabi.co.mz/wp-content/uploads/2017/10/C2new-800x800-72dpi-500x500.jpg');
