@@ -255,11 +255,12 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{ite
     });
 });
 
-app.post('/:order_id/ordermore',(req,res)=>{
+app.post('/:table_id/ordermore',(req,res)=>{
   const queryConfig = {
-    text: "UPDATE tables SET current_number_customers = ((SELECT current_number_customers FROM tables WHERE id = $1) -1) WHERE id = $1)",
-    values: [req.params.order_id]
+    text: "UPDATE tables SET current_number_customers = ((SELECT current_number_customers FROM tables WHERE id = $1) -1) WHERE id = $1",
+    values: [req.params.table_id]
   };
+  console.log('test')
   db.query(queryConfig)
     .then((response)=>{
       res.send('success')
