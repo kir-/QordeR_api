@@ -22,6 +22,7 @@ const paid = function(table_id, success){
         table_id: table_id,
         success: success
       }));
+      console.log('sent')
     }
   });
 }
