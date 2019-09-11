@@ -255,6 +255,17 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{ite
     });
 });
 
+app.post('/:order_id/ordermore',(req,res)=>{
+  const queryConfig = {
+    text: "UPDATE tables SET current_number_customers = ((SELECT current_number_customers FROM tables WHERE id = (SELECT table_id FROM orders WHERE id = $1))-1) WHERE id = (SELECT table_id FROM orders WHERE id = $1) RETURNING id",
+    values: [req.params.table_id]
+  };
+  db.query(queryConfig)
+    .then((response)=>{
+      res.send(response.rows[0])
+    })
+})
+
 app.get('/:table_id/order', (req, res)=>{
   const queryConfig = {
     text: "SELECT item_id, quantity, items.name, items.price_cents, order_details.id FROM order_details JOIN items ON items.id = item_id WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
