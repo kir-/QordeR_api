@@ -7,12 +7,13 @@ const cors = require("cors");
 const WebSocket = require('ws');
 const { Pool } = require('pg');
 const dbParams = require('./lib/db.js');
+const http = require('http');
 const db = new Pool(dbParams);
 db.connect();
 
-const app = express();
+// const app = express();
 
-const wss = new WebSocket.Server({ server: app });
+// const wss = new WebSocket.Server({ server: app });
 // const wss = new WebSocket.Server({ port: 3001 });
 
 // wss.on('upgrade', function upgrade(request, socket, head) {
@@ -28,6 +29,15 @@ const wss = new WebSocket.Server({ server: app });
 //     socket.destroy();
 //   }
 // });
+
+
+const port = process.env.PORT || 8080
+const app = express()
+const httpServer = http.createServer(app)
+const wss = new WebSocket.Server({
+    'server': httpServer
+})
+httpServer.listen(port)
 
 wss.on('connection', function connection(ws) {
   console.log('yay')
@@ -467,7 +477,7 @@ app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1
 //   res.send("nah");
 // });
 
-const port = process.env.PORT || 5000;
-app.listen(port);
+// const port = process.env.PORT || 5000;
+// app.listen(port);
 
 console.log('App is listening on port ' + port);
