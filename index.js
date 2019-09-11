@@ -12,7 +12,7 @@ db.connect();
 
 const app = express();
 
-const wss = new WebSocket.Server({ port: 3001 });
+const wss = new WebSocket.Server({ port: 8080 });
 
 const paid = function(table_id, success){
   wss.clients.forEach(function eachClient(client) {
