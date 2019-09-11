@@ -12,9 +12,9 @@ db.connect();
 
 const app = express();
 
-const wss = new WebSocket.Server({ server: app });
+const wss = new WebSocket.Server({ noServer: true });
 
-app.on('upgrade', function upgrade(request, socket, head) {
+wss.on('upgrade', function upgrade(request, socket, head) {
   const pathname = url.parse(request.url).pathname;
   console.log('checking if upgrade')
   if (pathname === '/upgrade') {
