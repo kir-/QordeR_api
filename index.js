@@ -104,7 +104,6 @@ app.post('/api/upgradeStatus/:orderId', (req, res) => {
   };
   db.query(queryConfig)
     .then((response) => {
-      console.log(response);
       const queryConfig = {
         text: '',
         values: []
@@ -114,11 +113,9 @@ app.post('/api/upgradeStatus/:orderId', (req, res) => {
         queryConfig.values = [orderId];
         db.query(queryConfig)
           .then((response) => {
-            console.log(response);
             res.send('success: time_accepted');
           })
           .catch((error) => {
-            console.error(error);
             res.send('failure: time_accepted');
           });
       } else if (!response.rows[0].time_completed) {
@@ -126,11 +123,9 @@ app.post('/api/upgradeStatus/:orderId', (req, res) => {
         queryConfig.values = [orderId];
         db.query(queryConfig)
           .then((response) => {
-            console.log(response);
             res.send('success: time_completed');
           })
           .catch((error) => {
-            console.error(error);
             res.send('failure: time_completed');
           });
       }
@@ -255,7 +250,7 @@ app.get('/:table_id/order', (req, res) => {
 
 app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
   const queryConfig = {
-    text: "SELECT name, id FROM categories WHERE restaurant_id = $1",
+    text: "SELECT name, id FROM categories WHERE restaurant_id = $1 AND active",
     values: [req.params.restaurant_id]
   };
   db.query(queryConfig)
@@ -278,21 +273,18 @@ app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
 });
 
 app.post('/api/:restaurant_id/menu', (req, res) => { //recieves [{category,items}, {category,items}] adds it to database and sets old items active to false
-  console.log('reached 1');
   const queryConfig = {
     text: "UPDATE items SET active = FALSE FROM categories WHERE categories.restaurant_id = $1",
     values: [req.params.restaurant_id]
   };
   db.query(queryConfig)
     .then(() => {
-      console.log('reached 2');
       const queryConfig = {
         text: "UPDATE categories SET active = FALSE WHERE restaurant_id = $1",
         values: [req.params.restaurant_id]
       };
       db.query(queryConfig)
         .then(() => {
-          console.log('reached 3');
           let categoryString = 'INSERT INTO categories (restaurant_id, name, active) VALUES ';
           for (let category of req.body.menu) {
             categoryString += `( $1, '${category.category}', true),`;
@@ -305,16 +297,14 @@ app.post('/api/:restaurant_id/menu', (req, res) => { //recieves [{category,items
           };
           db.query(queryConfig)
             .then((response) => {
-              console.log('reached 4');
               for (let index = 0; index < response.rows.length; index++) {
                 let itemString = 'INSERT INTO items (category_id, name, price_cents, image, active) VALUES ';
                 for (let item of req.body.menu[index].items) {
-                  itemString += `('${response.rows[index].id}', '${item.name}', '${item.price_cents}', '${item.image}' ,true),`;
+                  itemString += `('${response.rows[index].id}', '${item.name}', ${item.price_cents}, '${item.image}', true),`;
                 }
                 itemString = itemString.slice(0, -1);
                 db.query(itemString)
                   .then(() => {
-                    console.log('reached 5');
                     if (index === response.rows.length - 1) {
                       res.send("success");
                     }
