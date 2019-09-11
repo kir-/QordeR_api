@@ -12,21 +12,21 @@ db.connect();
 
 const app = express();
 
-const wss = new WebSocket.Server({ server: app });
+const wss = new WebSocket.Server({ noServer: true });
 
-// app.on('upgrade', function upgrade(request, socket, head) {
-//   const pathname = url.parse(request.url).pathname;
-//   console.log('checking if upgrade')
-//   if (pathname === '/upgrade') {
-//     wss.handleUpgrade(request, socket, head, function done(ws) {
-//       console.log('emittiing')
-//       wss.emit('connection', ws, request);
-//     });
-//   } else {
-//     console.log('not upgrade')
-//     socket.destroy();
-//   }
-// });
+wss.on('upgrade', function upgrade(request, socket, head) {
+  const pathname = url.parse(request.url).pathname;
+  console.log('checking if upgrade')
+  if (pathname === '/upgrade') {
+    wss.handleUpgrade(request, socket, head, function done(ws) {
+      console.log('emittiing')
+      wss.emit('connection', ws, request);
+    });
+  } else {
+    console.log('not upgrade')
+    socket.destroy();
+  }
+});
 
 wss.on('connection', function connection(ws) {
   console.log('yay')
@@ -460,6 +460,8 @@ app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1
 // Handles any requests that don't match the ones above
 app.get('*', (req, res) => {
   // res.sendFile(path.join(__dirname+'/client/build/index.html'));
+  console.log('rooot')
+  res.send(101)
   res.send("nah");
 });
 
