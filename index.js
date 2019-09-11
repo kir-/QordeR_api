@@ -268,7 +268,7 @@ app.get('/:table_id/order', (req, res)=>{
 
 app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
   const queryConfig = {
-    text: "SELECT name, id FROM categories WHERE restaurant_id = $1",
+    text: "SELECT name, id, image FROM categories WHERE restaurant_id = $1",
     values: [req.params.restaurant_id]
   };
   db.query(queryConfig)
