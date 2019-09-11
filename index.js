@@ -35,13 +35,15 @@ wss.on('connection', function connection(ws) {
 });
 
 const paid = function(table_id, success){
-  console.log('pay it')
+  console.log(wss.clients)
   wss.clients.forEach(function eachClient(client) {
+    console.log(client);
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify({
         table_id: table_id,
         success: success
       }));
+      console.log('sent')
     }
   });
 }
