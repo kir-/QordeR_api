@@ -229,7 +229,7 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
     });
 });
 
-app.post('/:table_id/order', (req, res) => { // accepts array called orders [{item_id, quantity}] and adds to database
+app.post('/:table_id/order', (req, res) => { // accepts array called order [{item_id, quantity}] and adds to database
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
@@ -241,7 +241,7 @@ app.post('/:table_id/order', (req, res) => { // accepts array called orders [{it
       console.log(`body: ${req.body.order}`);
       for (let item of req.body.order) {
         const queryConfig = {
-          text: "INSERT into order_details (item_id, order_id, quantity) VALUES ($1, $2, $3)",
+          text: "INSERT into order_details (item_id, order_id, quantity) VALUES ((SELECT id FROM items WHERE name = $1), $2, $3)",
           values: [item.id, response.rows[0].id, item.quantity]
         };
         db.query(queryConfig)
@@ -268,7 +268,7 @@ app.get('/:table_id/order', (req, res)=>{
 
 app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
   const queryConfig = {
-    text: "SELECT name, id FROM categories WHERE restaurant_id = $1",
+    text: "SELECT name, id, image FROM categories WHERE restaurant_id = $1",
     values: [req.params.restaurant_id]
   };
   db.query(queryConfig)
@@ -283,7 +283,7 @@ app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
         let menu = [];
         for (category of categories){
           let category_items = response.rows.filter(item=> item.category_id === category.id)
-          menu.push({category: category.name, items: category_items})
+          menu.push({category: category.name, items: category_items, image: category.image})
         }
         console.log(menu);
         res.send(menu);
