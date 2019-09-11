@@ -12,7 +12,9 @@ db.connect();
 
 const app = express();
 
-const wss = new WebSocket.Server({ server: app });
+// const wss = new WebSocket.Server({ server: app });
+const wss = new WebSocket.Server({ port: 3001 });
+
 
 // wss.on('upgrade', function upgrade(request, socket, head) {
 //   const pathname = url.parse(request.url).pathname;
