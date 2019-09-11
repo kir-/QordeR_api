@@ -283,7 +283,7 @@ app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
         let menu = [];
         for (category of categories){
           let category_items = response.rows.filter(item=> item.category_id === category.id)
-          menu.push({category: category.name, items: category_items})
+          menu.push({category: category.name, items: category_items, image: category.image})
         }
         console.log(menu);
         res.send(menu);
