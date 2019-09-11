@@ -36,17 +36,17 @@ app.use(morgan('dev'));
 let order = ["Fries", "Burger"];
 
 // An api endpoint that returns a short list of items
-app.get('/api/getMenu', (req, res) => {
-  res.json(order);
-  console.log('Sent list of items');
-});
+// app.get('/api/getMenu', (req, res) => {
+//   res.json(order);
+//   console.log('Sent list of items');
+// });
 
-app.post('/api/getMenu', (req, res) => {
-  order.push(req.body.order);
-  console.log('Got an order!\n');
-  console.log(req.body);
-  res.send('success');
-});
+// app.post('/api/getMenu', (req, res) => {
+//   order.push(req.body.order);
+//   console.log('Got an order!\n');
+//   console.log(req.body);
+//   res.send('success');
+// });
 
 app.get('/api/getTables/:restaurantId', (req, res) => {
   const queryConfig = {
@@ -285,6 +285,7 @@ app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
           let category_items = response.rows.filter(item=> item.category_id === category.id)
           menu.push({category: category.name, items: category_items})
         }
+        console.log(menu);
         res.send(menu);
       })
   });
