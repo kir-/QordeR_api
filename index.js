@@ -382,9 +382,7 @@ app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1
               .then((response)=>{
                   if(response.rows.length === 0){
                     paid(req.params.table_id)
-                    res.send(JSON.stringify({
-                      table_id: req.params.table_id
-                    }));
+                    res.send("success");
                   } else {
                     // console.log(response.rows)
                     const queryConfig = {
@@ -401,7 +399,7 @@ app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1
                           .then((response)=>{
                             console.log(response.rows[0].payment_customers + " " + response.rows[0].current_number_customers)
                             if (response.rows[0].payment_customers === response.rows[0].current_number_customers){
-                              res.send("someone fucked up")
+                              res.send("please try again")
                             } else {
                               res.send("not paid")
                             }
