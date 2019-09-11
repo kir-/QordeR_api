@@ -4,13 +4,25 @@ const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const cookiesMiddleware = require('universal-cookie-express');
 const cors = require("cors");
-
+const WebSocket = require('ws');
 const { Pool } = require('pg');
 const dbParams = require('./lib/db.js');
 const db = new Pool(dbParams);
 db.connect();
 
 const app = express();
+
+const wss = new WebSocket.Server({ port: 3001 });
+
+const paid = function(table_id){
+  wss.clients.forEach(function eachClient(client) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        table_id: table_id
+      }));
+    }
+  });
+}
 
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, 'client/build')));
@@ -184,7 +196,7 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
       console.log(customers);
       if (customers === 0) {
         const queryConfig = {
-          text: "INSERT into orders (table_id, completed) VALUES ($1, FALSE) RETURNING id",
+          text: "INSERT into orders (table_id, completed, payment_customers) VALUES ($1, FALSE, 0) RETURNING id",
           values: [req.params.table_id]
         };
         db.query(queryConfig)
@@ -245,7 +257,7 @@ app.post('/:table_id/order', (req, res) => { // accepts array called orders [{it
 
 app.get('/:table_id/order', (req, res)=>{
   const queryConfig = {
-    text: "SELECT item_id, quantity, items.name, items.price_cents FROM order_details JOIN items ON items.id = item_id WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
+    text: "SELECT item_id, quantity, items.name, items.price_cents, order_details.id FROM order_details JOIN items ON items.id = item_id WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
     values: [req.params.table_id]
   };
   db.query(queryConfig)
@@ -304,20 +316,89 @@ app.post('/api/:restaurant_id/menu', (req, res)=>{//recieves [{category,items}, 
           db.query(queryConfig)
             .then((response)=>{
               for (let index = 0; index < response.rows.length; index ++){
-                let item_string = 'INSERT INTO items (category_id, name, price_cents, image, active) VALUES '
-                for (item of req.body.menu[index].items) {
-                  item_string += `('${response.rows[index].id}', '${item.name}', '${item.price_cents}', '${item.image}' ,true),`
+                if (req.body.menu[index].items){
+                  let item_string = 'INSERT INTO items (category_id, name, price_cents, image, active) VALUES '
+                  for (item of req.body.menu[index].items) {
+                    item_string += `('${response.rows[index].id}', '${item.name}', '${item.price_cents}', '${item.image}' ,true),`
+                  }
+                  item_string = item_string.slice(0,-1)
+                  db.query(item_string)
+                    .then(()=>{
+                      if (index === response.rows.length-1){
+                        res.send("success")
+                      }
+                    })
+                } else {
+                  if (index === response.rows.length-1){
+                    res.send("success")
+                  }
                 }
-                item_string = item_string.slice(0,-1)
-                db.query(item_string)
-                  .then(()=>{
-                    if (index === response.rows.length-1){
-                      res.send("success")
-                    }
-                  })
               }
             })
         })
+    })
+})
+
+app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1,3,5] and updates in database
+  let paid_items = req.body.items;
+  const queryConfig = {
+    text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
+    values: [req.params.table_id]
+  };
+  console.log(`table id: ${req.params.table_id}`);
+  db.query(queryConfig)
+    .then((response)=>{
+      let order_id = response.rows[0].id
+      let inserted = 0;
+      for (item of paid_items){
+        const queryConfig = {
+          text: "UPDATE order_details SET paid=TRUE, divide=((SELECT divide FROM order_details WHERE id = $1) + 1) WHERE id = $1",
+          values: [item]
+        };
+        db.query(queryConfig)
+          .then(()=>{
+            inserted+=1;
+            console.log("added ",item)
+            if(paid_items.length === inserted) {
+              const queryConfig = {
+                text: "SELECT * FROM order_details WHERE order_id = $1 AND PAID = FALSE",
+                values: [order_id]
+              };
+              console.log("order id in select ", order_id)
+              db.query(queryConfig)
+              .then((response)=>{
+                  if(response.rows.length === 0){
+                    paid(req.params.table_id)
+                    res.send(JSON.stringify({
+                      table_id: req.params.table_id
+                    }));
+                  } else {
+                    // console.log(response.rows)
+                    const queryConfig = {
+                      text: "UPDATE orders SET payment_customers =((SELECT payment_customers FROM orders WHERE id = $1) + 1) WHERE id = $1",
+                      values: [order_id]
+                    };
+                    db.query(queryConfig)
+                      .then(()=>{
+                        const queryConfig = {
+                          text: "SELECT payment_customers, current_number_customers FROM orders JOIN tables ON tables.id = table_id WHERE orders.id = $1",
+                          values: [order_id]
+                        };
+                        db.query(queryConfig)
+                          .then((response)=>{
+                            console.log(response.rows[0].payment_customers + " " + response.rows[0].current_number_customers)
+                            if (response.rows[0].payment_customers === response.rows[0].current_number_customers){
+                              res.send("someone fucked up")
+                            } else {
+                              res.send("not paid")
+                            }
+                          })
+                      })
+                  }
+                })
+            }
+          })
+      } 
     })
 })
 

@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "local": "./node_modules/.bin/nodemon -L --ignore public/",
     "db:reset": "node bin/resetdb.js",
-    "start": "node ./index.js"
+    "start": "node bin/resetdb.js"
   },
   "author": "",
   "license": "ISC",
@@ -20,7 +20,8 @@
     "morgan": "^1.9.1",
     "pg": "^6.4.2",
     "pg-native": "^3.0.0",
-    "universal-cookie-express": "^4.0.1"
+    "universal-cookie-express": "^4.0.1",
+    "ws": "^7.1.2"
   },
   "devDependencies": {
     "nodemon": "^1.19.1"
