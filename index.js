@@ -35,13 +35,15 @@ wss.on('connection', function connection(ws) {
 });
 
 const paid = function(table_id, success){
-  console.log('pay it')
+  console.log(wss.clients)
   wss.clients.forEach(function eachClient(client) {
+    console.log(client);
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify({
         table_id: table_id,
         success: success
       }));
+      console.log('sent')
     }
   });
 }
@@ -460,9 +462,9 @@ app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1
 // Handles any requests that don't match the ones above
 app.get('*', (req, res) => {
   // res.sendFile(path.join(__dirname+'/client/build/index.html'));
-  console.log('rooot')
-  res.send(101)
-  res.send("nah");
+  console.log('not available')
+  res.send(101);
+//   res.send("nah");
 });
 
 const port = process.env.PORT || 5000;
