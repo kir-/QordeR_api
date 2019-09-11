@@ -463,7 +463,8 @@ app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1
 app.get('*', (req, res) => {
   // res.sendFile(path.join(__dirname+'/client/build/index.html'));
   console.log('not available')
-  res.send("nah");
+  res.send(101);
+//   res.send("nah");
 });
 
 const port = process.env.PORT || 5000;
