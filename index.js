@@ -15,7 +15,7 @@ const app = express();
 const wss = new WebSocket.Server({ port: 8080 });
 
 const paid = function(table_id, success){
-  console.log('pay it')
+  console.log(wss.clients)
   wss.clients.forEach(function eachClient(client) {
     console.log(client);
     if (client.readyState === WebSocket.OPEN) {
