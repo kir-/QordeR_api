@@ -41,6 +41,7 @@ CREATE Table orders (
   table_id INTEGER REFERENCES tables(id) ON DELETE CASCADE,
   order_total_cents INTEGER,
   payment_total_cents INTEGER,
+  payment_customers INTEGER,
   completed BOOLEAN,
   time_started timestamp,
   time_completed timestamp
