@@ -12,9 +12,30 @@ db.connect();
 
 const app = express();
 
-const wss = new WebSocket.Server({ port: 8080 });
+const wss = new WebSocket.Server({ noServer: true });
+
+app.on('upgrade', function upgrade(request, socket, head) {
+  const pathname = url.parse(request.url).pathname;
+  console.log('checking if upgrade')
+  if (pathname === '/upgrade') {
+    wss.handleUpgrade(request, socket, head, function done(ws) {
+      console.log('emittiing')
+      wss.emit('connection', ws, request);
+    });
+  } else {
+    console.log('not upgrade')
+    socket.destroy();
+  }
+});
+
+wss.on('connection', function connection(ws) {
+  console.log('yay')
+ 
+  ws.send('something');
+});
 
 const paid = function(table_id, success){
+  console.log('pay it')
   wss.clients.forEach(function eachClient(client) {
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify({
