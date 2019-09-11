@@ -14,19 +14,19 @@ const app = express();
 
 const wss = new WebSocket.Server({ server: app });
 
-// app.on('upgrade', function upgrade(request, socket, head) {
-//   const pathname = url.parse(request.url).pathname;
-//   console.log('checking if upgrade')
-//   if (pathname === '/upgrade') {
-//     wss.handleUpgrade(request, socket, head, function done(ws) {
-//       console.log('emittiing')
-//       wss.emit('connection', ws, request);
-//     });
-//   } else {
-//     console.log('not upgrade')
-//     socket.destroy();
-//   }
-// });
+app.on('upgrade', function upgrade(request, socket, head) {
+  const pathname = url.parse(request.url).pathname;
+  console.log('checking if upgrade')
+  if (pathname === '/upgrade') {
+    wss.handleUpgrade(request, socket, head, function done(ws) {
+      console.log('emittiing')
+      wss.emit('connection', ws, request);
+    });
+  } else {
+    console.log('not upgrade')
+    socket.destroy();
+  }
+});
 
 wss.on('connection', function connection(ws) {
   console.log('yay')
