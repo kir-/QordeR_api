@@ -242,7 +242,7 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{ite
       for (let item of req.body.order) {
         const queryConfig = {
           text: "INSERT into order_details (item_id, order_id, quantity) VALUES ((SELECT id FROM items WHERE name = $1), $2, $3)",
-          values: [item.id, response.rows[0].id, item.quantity]
+          values: [item.name, response.rows[0].id, item.quantity]
         };
         db.query(queryConfig)
           .then(() => {
