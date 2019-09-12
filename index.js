@@ -416,7 +416,7 @@ app.post('/calculate_total', (req, res) => {
   }
   const queryConfig = {
     text: 'SELECT name,price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN (' + params.join(',') + ')',
-    values: [items]
+    values: [...items]
   };
   db.query(queryConfig)
     .then((response) => {
@@ -434,7 +434,7 @@ app.post('/calculate_payment', (req, res) => {
   }
   const queryConfig = {
     text: 'SELECT name,price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN (' + params.join(',') + ')',
-    values: [items]
+    values: [...items]
   };
   db.query(queryConfig)
     .then((response) => {
