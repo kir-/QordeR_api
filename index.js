@@ -260,12 +260,12 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{nam
       for (let item of req.body.order) {
         const queryConfig = {
           text: "INSERT into order_details (item_id, order_id, quantity, paid, time_ordered) VALUES ($1, $2, $3, FALSE, NOW())",
-          values: [item, response.rows[0].id, item.quantity]
+          values: [item.id, response.rows[0].id, item.quantity]
         };
         db.query(queryConfig)
           .then(() => {
-            console.log(`item id: ${item.name}, item quantity: ${item.quantity}`);
-            if (req.body.order[req.body.order.length - 1].name === item.name) {
+            console.log(`item id: ${item.id}, item quantity: ${item.quantity}`);
+            if (req.body.order[req.body.order.length - 1].id === item.id) {
               console.log("success");
               newItem();
               res.send("success");
