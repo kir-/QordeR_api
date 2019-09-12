@@ -246,7 +246,7 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
     });
 });
 
-app.post('/:table_id/order', (req, res) => { // accepts array called order [{name, quantity}] and adds to database
+app.post('/:table_id/order', (req, res) => { // accepts array called order [{name, quantity, id}] and adds to database
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
@@ -311,7 +311,7 @@ app.get('/:table_id/finish', (req, res) => { // ends order
 
 app.get('/:table_id/pay/done', (req, res) => {
   const queryConfig = {
-    text: "SELECT payment_cents FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
+    text: "SELECT payment_cents FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
     values: [req.params.table_id]
   }
   db.query(queryConfig)
@@ -332,7 +332,8 @@ app.get('/:table_id/pay/done', (req, res) => {
           for (cents of order_cents){
             total_order_cents += Number(cents.price_cents) * Number(cents.quantity)
           }
-          if (total_payment_cents === total_order_cents){
+          console.log(`payment: ${total_payment_cents}, total: ${total_order_cents}`)
+          if (total_payment_cents >= total_order_cents){
             const queryConfig = {
               text: "UPDATE orders SET completed = true WHERE table_id = $1 AND completed = FALSE",
               values: [req.params.table_id]
