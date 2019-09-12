@@ -336,7 +336,7 @@ app.post('/:table_id/pay/confirm', (req, res) => {
 
 app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
   const queryConfig = {
-    text: "SELECT name, id, image FROM categories WHERE restaurant_id = $1 AND active",
+    text: "SELECT name, id, image FROM categories WHERE restaurant_id = $1 AND active ",
     values: [req.params.restaurant_id]
   };
   db.query(queryConfig)
@@ -351,7 +351,7 @@ app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
           let menu = [];
           for (let category of categories) {
             let categoryItems = response.rows.filter(item => item.category_id === category.id);
-             menu.push({category: category.name, items: category_items, image: category.image})
+             menu.push({category: category.name, items: categoryItems, image: category.image})
           }
           res.send(menu);
         });
@@ -407,7 +407,7 @@ app.post('/api/:restaurant_id/menu', (req, res) => { //recieves [{category,items
     });
 });
 
-app.post('/calculate_payment', (req, res) => {
+app.post('/calculate_total', (req, res) => {
   let items = req.body.items;
   let price = 0;
   itemString = ''
@@ -416,7 +416,7 @@ app.post('/calculate_payment', (req, res) => {
   }
   itemString = itemString.slice(0, -1);
   const queryConfig = {
-    text: "SELECT price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE id IN ($1)",
+    text: "SELECT name,price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN ($1)",
     values: [itemString]
   };
   db.query(queryConfig)
@@ -425,6 +425,22 @@ app.post('/calculate_payment', (req, res) => {
         price += (item.price_cents * item.quantity) / divide
       }
       res.send((price / 100).toFixed(2))
+    })
+})
+app.post('/calculate_payment', (req, res) => {
+  let items = req.body.items;
+  itemString = ''
+  for (item of items) {
+    itemString += item + ','
+  }
+  itemString = itemString.slice(0, -1);
+  const queryConfig = {
+    text: "SELECT name, price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN ($1)",
+    values: [itemString]
+  };
+  db.query(queryConfig)
+    .then((response) => {
+      res.send(response.rows)
     })
 })
 app.get('/:table_id/pay/reset', (req, res) => {
