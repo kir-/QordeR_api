@@ -385,7 +385,7 @@ app.get('/:table_id/pay/done', (req, res) => {
           for (cents of order_cents){
             total_order_cents += Number(cents.price_cents) * Number(cents.quantity)
           }
-          if (total_payment_cents === total_order_cents){
+          if (total_payment_cents >= total_order_cents){
             const queryConfig = {
               text: "UPDATE orders SET completed = true WHERE table_id = $1 AND completed = FALSE",
               values: [req.params.table_id]
