@@ -412,11 +412,11 @@ app.post('/calculate_total', (req, res) => {
   let price = 0;
   itemString = ''
   for (item of items) {
-    itemString += item + ','
+    itemString += item + ', '
   }
   itemString = itemString.slice(0, -1);
   const queryConfig = {
-    text: "SELECT name,price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN ($1)",
+    text: "SELECT name,price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN ( $1 )",
     values: [itemString]
   };
   db.query(queryConfig)
@@ -431,11 +431,11 @@ app.post('/calculate_payment', (req, res) => {
   let items = req.body.items;
   itemString = ''
   for (item of items) {
-    itemString += item + ','
+    itemString += item + ', '
   }
   itemString = itemString.slice(0, -1);
   const queryConfig = {
-    text: "SELECT name, price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN ($1)",
+    text: "SELECT name, price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN ( $1 )",
     values: [itemString]
   };
   db.query(queryConfig)
