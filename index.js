@@ -375,7 +375,7 @@ app.get('/:table_id/pay/done', (req, res) => {
         total_payment_cents += Number(cents.payment_cents)
       }
       const queryConfig = {
-        text: "SELECT price_cents, quantity FROM order_details JOIN items ON items.id = item_id JOIN orders ON order_id = orders.id WHERE table_id = $1",
+        text: "SELECT price_cents, quantity FROM order_details JOIN items ON items.id = item_id JOIN orders ON order_id = orders.id WHERE table_id = $1)",
         values: [req.params.table_id]
       }
       db.query(queryConfig)
