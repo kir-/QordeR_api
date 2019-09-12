@@ -264,8 +264,8 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{nam
         };
         db.query(queryConfig)
           .then(() => {
-            console.log(`item id: ${item.name}, item quantity: ${item.quantity}`);
-            if (req.body.order[req.body.order.length - 1].name === item.name) {
+            console.log(`item id: ${item}, item quantity: ${item.quantity}`);
+            if (req.body.order[req.body.order.length - 1] === item) {
               console.log("success");
               newItem();
               res.send("success");
