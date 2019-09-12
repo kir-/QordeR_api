@@ -65,7 +65,7 @@ app.use(cors());
 app.use(cookiesMiddleware());
 app.use(morgan('dev'));
 
-let order = ["Fries", "Burger"];
+// let order = ["Fries", "Burger"];
 
 // An api endpoint that returns a short list of items
 // app.get('/api/getMenu', (req, res) => {
@@ -307,6 +307,42 @@ app.get('/:table_id/order', (req, res)=>{
   db.query(queryConfig)
     .then(response=>{
       res.send(response.rows)
+    })
+})
+
+app.get('/:table_id/finish', (req,res)=>{ // ends order
+  const queryConfig = {
+    text: "UPDATE orders SET completed = true WHERE table_id = $1 AND completed = FALSE",
+    values: [req.params.table_id]
+  };
+  db.query(queryConfig)
+    .then(response=>{
+      res.send(success)
+    })
+})
+
+app.post('/:table_id/pay/confirm',  (req,res)=>{
+  const queryConfig = {
+    text: "INSERT INTO payments (order_id, payment_cents) VALUES ((SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE), $2)",
+    values: [req.params.table_id, req.body.price]
+  };
+  db.query(queryConfig)
+    .then(response=>{
+
+      const queryConfig = {
+        text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
+        values: [req.params.table_id]
+      };
+      db.query(queryConfig)
+        .then((response)=>{
+          let numberOfPayments = response.rows[0].length
+          const queryConfig = {
+            text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
+            values: [req.params.table_id]
+          };
+          db.query(queryConfig)
+        })
+        res.send(success)
     })
 })
 
