@@ -410,6 +410,7 @@ app.post('/api/:restaurant_id/menu', (req, res) => { //recieves [{category,items
 app.post('/calculate_total', (req, res) => {
   let items = req.body.items;
   let price = 0;
+
   params = [];
   for(let i = 1; i <= items.length; i++) {
   params.push('$' + i);
@@ -433,6 +434,7 @@ app.post('/calculate_payment', (req, res) => {
   params.push('$' + i);
   }
   const queryConfig = {
+
     text: 'SELECT name,price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN (' + params.join(',') + ')',
     values: [items]
   };
