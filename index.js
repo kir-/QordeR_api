@@ -200,7 +200,8 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
         };
         db.query(queryConfig)
           .then((response)=>{
-            if(!response.rows[0].length){
+            console.log('inside customers = 0')
+            if(response.rows[0].length === 0){
               const queryConfig = {
                 text: "INSERT into orders (table_id, completed, payment_customers, time_started) VALUES ($1, FALSE, 0, NOW()) RETURNING id",
                 values: [req.params.table_id]
@@ -208,6 +209,7 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
               db.query(queryConfig)
                 .then(
                   (response) => {
+                    console.log('inside insert')
                     const queryConfig = {
                       text: `UPDATE tables SET current_number_customers = 1 WHERE id = $1`,
                       values: [req.params.table_id]
@@ -220,6 +222,7 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
                 text: `UPDATE tables SET current_number_customers = 1 WHERE id = $1`,
                 values: [req.params.table_id]
               };
+              console.log('inside order is there')
               db.query(queryConfig);
               res.send(response.rows[0]);
             }
