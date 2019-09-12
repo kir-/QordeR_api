@@ -15,39 +15,53 @@ const port = process.env.PORT || 8080
 const app = express()
 const httpServer = http.createServer(app)
 const wss = new WebSocket.Server({
-    'server': httpServer
-})
-httpServer.listen(port)
+  'server': httpServer
+});
+httpServer.listen(port);
 
-wss.on('connection', function connection(ws) {
-  console.log('yay')
+wss.on('connection', function(ws) {
+  console.log('yay');
+  wss.onmessage = function(event) {
+    console.log(event);
+  };
   ws.send('something');
 });
 
 const paid = function(table_id, success) {
-  console.log(wss.clients)
-  wss.clients.forEach(function eachClient(client) {
+  console.log(wss.clients);
+  wss.clients.forEach(function(client) {
     console.log(client);
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify({
         table_id: table_id,
         success: success
       }));
-      console.log('sent')
+      console.log('sent');
     }
   });
-}
+};
+
+const newItem = function() {
+  console.log('reached new item');
+  wss.clients.forEach(function(client) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send('new item');
+    }
+  });
+};
 
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, 'client/build')));
 
-// app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
 app.use(cookiesMiddleware());
 app.use(morgan('dev'));
 
 app.get('/api/getTables/:restaurantId', (req, res) => {
+  wss.onmessage = function(event) {
+    console.log(event);
+  };
   const queryConfig = {
     text: `
       SELECT id, completed FROM (
@@ -156,8 +170,6 @@ app.post('/login', (req, res) => {
   db.query(queryConfig)
     .then((response) => {
       const restaurantId = response.rows[0].id;
-      // req.universalCookies.set('user', restaurantId);
-      // res.send(`/admin/${restaurantId}`);
       console.log(`restaurantId: ${restaurantId}`);
       res.send({ restaurantId });
     })
@@ -168,13 +180,6 @@ app.post('/login', (req, res) => {
 
 app.post('/logout', (req, res) => {
   res.send(`/admin`);
-});
-
-app.get('/restaurant/:id', (req, res) => {
-  const queryConfig = {
-    text: "SELECT * FROM tables WHERE restaurant_id = $1",
-    values: [req.params.id]
-  };
 });
 
 app.get('/:table_id', (req, res) => { //creates new order is table is empty or adds to current order
@@ -193,9 +198,9 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
           values: [req.params.table_id]
         };
         db.query(queryConfig)
-          .then((response)=>{
+          .then((response) => {
             console.log('inside customers = 0')
-            if(response.rows[0].length === 0){
+            if (!response.rows[0]) {
               const queryConfig = {
                 text: "INSERT into orders (table_id, completed, payment_customers, time_started) VALUES ($1, FALSE, 0, NOW()) RETURNING id",
                 values: [req.params.table_id]
@@ -246,6 +251,7 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{nam
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
   };
+  console.log(req.body);
   console.log(`table id: ${req.params.table_id}`);
   db.query(queryConfig)
     .then((response) => {
@@ -261,6 +267,7 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{nam
             console.log(`item id: ${item.name}, item quantity: ${item.quantity}`);
             if (req.body.order[req.body.order.length - 1].name === item.name) {
               console.log("success");
+              newItem();
               res.send("success");
             }
           });
@@ -291,31 +298,31 @@ app.get('/:table_id/order', (req, res) => {
     });
 });
 
-app.get('/:table_id/finish', (req,res)=>{ // ends order
+app.get('/:table_id/finish', (req, res) => { // ends order
   const queryConfig = {
     text: "UPDATE orders SET completed = true WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
   };
   db.query(queryConfig)
-    .then(response=>{
+    .then(response => {
       res.send(success)
     })
 })
 
-app.post('/:table_id/pay/confirm',  (req,res)=>{
+app.post('/:table_id/pay/confirm', (req, res) => {
   const queryConfig = {
     text: "INSERT INTO payments (order_id, payment_cents) VALUES ((SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE), $2)",
     values: [req.params.table_id, req.body.price]
   };
   db.query(queryConfig)
-    .then(response=>{
+    .then(response => {
 
       const queryConfig = {
         text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
         values: [req.params.table_id]
       };
       db.query(queryConfig)
-        .then((response)=>{
+        .then((response) => {
           let numberOfPayments = response.rows[0].length
           const queryConfig = {
             text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
@@ -323,7 +330,7 @@ app.post('/:table_id/pay/confirm',  (req,res)=>{
           };
           db.query(queryConfig)
         })
-        res.send(success)
+      res.send(success)
     })
 })
 
@@ -420,33 +427,33 @@ app.post('/calculate_payment', (req, res) => {
       res.send((price / 100).toFixed(2))
     })
 })
-app.get('/:table_id/pay/reset', (req, res)=>{
+app.get('/:table_id/pay/reset', (req, res) => {
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
   };
   console.log(`table id: ${req.params.table_id}`);
   db.query(queryConfig)
-    .then((response)=>{
+    .then((response) => {
       let order_id = response.rows[0].id;
       const queryConfig = {
         text: "UPDATE order_details SET paid=FALSE, divide=0 WHERE order_id = $1",
         values: [order_id]
       };
       db.query(queryConfig)
-        .then((response)=>{
+        .then((response) => {
           const queryConfig = {
             text: "UPDATE orders SET payment_customers = 0 WHERE id = $1",
             values: [order_id]
           };
           db.query(queryConfig)
-            .then(()=>{
+            .then(() => {
               res.send('success')
             })
         })
     })
 })
-app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1,3,5] and updates in database
+app.post('/:table_id/pay', (req, res) => { // recieves array of order_datails.id [1,3,5] and updates in database
   let paid_items = req.body.items;
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
