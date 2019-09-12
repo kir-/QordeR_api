@@ -11,26 +11,6 @@ const http = require('http');
 const db = new Pool(dbParams);
 db.connect();
 
-// const app = express();
-
-// const wss = new WebSocket.Server({ server: app });
-// const wss = new WebSocket.Server({ port: 3001 });
-
-// wss.on('upgrade', function upgrade(request, socket, head) {
-//   const pathname = url.parse(request.url).pathname;
-//   console.log('checking if upgrade')
-//   if (pathname === '/upgrade') {
-//     wss.handleUpgrade(request, socket, head, function done(ws) {
-//       console.log('emittiing')
-//       wss.emit('connection', ws, request);
-//     });
-//   } else {
-//     console.log('not upgrade')
-//     socket.destroy();
-//   }
-// });
-
-
 const port = process.env.PORT || 8080
 const app = express()
 const httpServer = http.createServer(app)
@@ -66,21 +46,6 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(cookiesMiddleware());
 app.use(morgan('dev'));
-
-let order = ["Fries", "Burger"];
-
-// An api endpoint that returns a short list of items
-// app.get('/api/getMenu', (req, res) => {
-//   res.json(order);
-//   console.log('Sent list of items');
-// });
-
-// app.post('/api/getMenu', (req, res) => {
-//   order.push(req.body.order);
-//   console.log('Got an order!\n');
-//   console.log(req.body);
-//   res.send('success');
-// });
 
 app.get('/api/getTables/:restaurantId', (req, res) => {
   const queryConfig = {
@@ -224,19 +189,38 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
       console.log(customers);
       if (customers === 0) {
         const queryConfig = {
-          text: "INSERT into orders (table_id, completed, payment_customers) VALUES ($1, FALSE, 0) RETURNING id",
+          text: "SELECT * FROM orders WHERE table_id = $1 AND completed = FALSE",
           values: [req.params.table_id]
         };
         db.query(queryConfig)
-          .then(
-            (response) => {
+          .then((response)=>{
+            console.log('inside customers = 0')
+            if(response.rows[0].length === 0){
+              const queryConfig = {
+                text: "INSERT into orders (table_id, completed, payment_customers, time_started) VALUES ($1, FALSE, 0, NOW()) RETURNING id",
+                values: [req.params.table_id]
+              };
+              db.query(queryConfig)
+                .then(
+                  (response) => {
+                    console.log('inside insert')
+                    const queryConfig = {
+                      text: `UPDATE tables SET current_number_customers = 1 WHERE id = $1`,
+                      values: [req.params.table_id]
+                    };
+                    db.query(queryConfig);
+                    res.send(response.rows[0]);
+                  });
+            } else {
               const queryConfig = {
                 text: `UPDATE tables SET current_number_customers = 1 WHERE id = $1`,
                 values: [req.params.table_id]
               };
+              console.log('inside order is there')
               db.query(queryConfig);
               res.send(response.rows[0]);
-            });
+            }
+          })
       } else {
         const queryConfig = {
           text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
@@ -257,7 +241,7 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
     });
 });
 
-app.post('/:table_id/order', (req, res) => { // accepts array called order [{item_id, quantity}] and adds to database
+app.post('/:table_id/order', (req, res) => { // accepts array called order [{name, quantity}] and adds to database
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
@@ -274,8 +258,9 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{ite
         };
         db.query(queryConfig)
           .then(() => {
-            console.log(`item id: ${item.id}, item quantity: ${item.quantity}`);
-            if (req.body.order[req.body.order.length - 1].id === item.id) {
+            console.log(`item id: ${item.name}, item quantity: ${item.quantity}`);
+            if (req.body.order[req.body.order.length - 1].name === item.name) {
+              console.log("success");
               res.send("success");
             }
           });
@@ -285,7 +270,7 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{ite
 
 app.post('/:table_id/ordermore', (req, res) => {
   const queryConfig = {
-    text: "UPDATE tables SET current_number_customers = ((SELECT current_number_customers FROM tables WHERE id = $1) -1) WHERE id = $1",
+    text: "UPDATE tables SET current_number_customers = ((SELECT current_number_customers FROM tables WHERE id = $1) - 1) WHERE id = $1",
     values: [req.params.table_id]
   };
   console.log('test')
@@ -305,6 +290,42 @@ app.get('/:table_id/order', (req, res) => {
       res.send(response.rows);
     });
 });
+
+app.get('/:table_id/finish', (req,res)=>{ // ends order
+  const queryConfig = {
+    text: "UPDATE orders SET completed = true WHERE table_id = $1 AND completed = FALSE",
+    values: [req.params.table_id]
+  };
+  db.query(queryConfig)
+    .then(response=>{
+      res.send(success)
+    })
+})
+
+app.post('/:table_id/pay/confirm',  (req,res)=>{
+  const queryConfig = {
+    text: "INSERT INTO payments (order_id, payment_cents) VALUES ((SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE), $2)",
+    values: [req.params.table_id, req.body.price]
+  };
+  db.query(queryConfig)
+    .then(response=>{
+
+      const queryConfig = {
+        text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
+        values: [req.params.table_id]
+      };
+      db.query(queryConfig)
+        .then((response)=>{
+          let numberOfPayments = response.rows[0].length
+          const queryConfig = {
+            text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
+            values: [req.params.table_id]
+          };
+          db.query(queryConfig)
+        })
+        res.send(success)
+    })
+})
 
 app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
   const queryConfig = {
@@ -399,8 +420,33 @@ app.post('/calculate_payment', (req, res) => {
       res.send((price / 100).toFixed(2))
     })
 })
-
-app.post('/:table_id/pay', (req, res) => { // recieves array of order_datails.id [1,3,5] and updates in database
+app.get('/:table_id/pay/reset', (req, res)=>{
+  const queryConfig = {
+    text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
+    values: [req.params.table_id]
+  };
+  console.log(`table id: ${req.params.table_id}`);
+  db.query(queryConfig)
+    .then((response)=>{
+      let order_id = response.rows[0].id;
+      const queryConfig = {
+        text: "UPDATE order_details SET paid=FALSE, divide=0 WHERE order_id = $1",
+        values: [order_id]
+      };
+      db.query(queryConfig)
+        .then((response)=>{
+          const queryConfig = {
+            text: "UPDATE orders SET payment_customers = 0 WHERE id = $1",
+            values: [order_id]
+          };
+          db.query(queryConfig)
+            .then(()=>{
+              res.send('success')
+            })
+        })
+    })
+})
+app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1,3,5] and updates in database
   let paid_items = req.body.items;
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
