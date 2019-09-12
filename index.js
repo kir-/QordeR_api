@@ -259,8 +259,8 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{nam
       console.log(`body: ${req.body.order}`);
       for (let item of req.body.order) {
         const queryConfig = {
-          text: "INSERT into order_details (item_id, order_id, quantity, paid, time_ordered) VALUES ((SELECT id FROM items WHERE name = $1), $2, $3, FALSE, NOW())",
-          values: [item.name, response.rows[0].id, item.quantity]
+          text: "INSERT into order_details (item_id, order_id, quantity, paid, time_ordered) VALUES ($1, $2, $3, FALSE, NOW())",
+          values: [item, response.rows[0].id, item.quantity]
         };
         db.query(queryConfig)
           .then(() => {
