@@ -195,7 +195,7 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
       console.log(customers);
       if (customers === 0) {
         const queryConfig = {
-          text: "SELECT * orders WHERE table_id = $1 AND active = TRUE",
+          text: "SELECT * orders WHERE table_id = $1 AND active = FALSE",
           values: [req.params.table_id]
         };
         db.query(queryConfig)
