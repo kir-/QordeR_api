@@ -230,7 +230,7 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
       console.log(customers);
       if (customers === 0) {
         const queryConfig = {
-          text: "INSERT into orders (table_id, completed, payment_customers) VALUES ($1, FALSE, 0) RETURNING id",
+          text: "INSERT into orders (table_id, completed, payment_customers, time_started) VALUES ($1, FALSE, 0, NOW()) RETURNING id",
           values: [req.params.table_id]
         };
         db.query(queryConfig)
@@ -263,7 +263,7 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
     });
 });
 
-app.post('/:table_id/order', (req, res) => { // accepts array called order [{item_id, quantity}] and adds to database
+app.post('/:table_id/order', (req, res) => { // accepts array called order [{name, quantity}] and adds to database
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
@@ -280,8 +280,8 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{ite
         };
         db.query(queryConfig)
           .then(() => {
-            console.log(`item id: ${item.id}, item quantity: ${item.quantity}`);
-            if (req.body.order[req.body.order.length - 1].id === item.id) {
+            console.log(`item id: ${item.name}, item quantity: ${item.quantity}`);
+            if (req.body.order[req.body.order.length - 1].name === item.name) {
               res.send("success");
             }
           });
