@@ -410,14 +410,13 @@ app.post('/api/:restaurant_id/menu', (req, res) => { //recieves [{category,items
 app.post('/calculate_total', (req, res) => {
   let items = req.body.items;
   let price = 0;
-  itemString = ''
-  for (item of items) {
-    itemString += item + ','
+  params = [];
+  for(let i = 1; i <= items.length; i++) {
+  params.push('$' + i);
   }
-  itemString = itemString.slice(0, -1);
   const queryConfig = {
-    text: "SELECT name,price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN ($1)",
-    values: [itemString]
+    text: 'SELECT name,price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN (' + params.join(',') + ')',
+    values: [items]
   };
   db.query(queryConfig)
     .then((response) => {
@@ -429,14 +428,13 @@ app.post('/calculate_total', (req, res) => {
 })
 app.post('/calculate_payment', (req, res) => {
   let items = req.body.items;
-  itemString = ''
-  for (item of items) {
-    itemString += item + ','
+  params = [];
+  for(let i = 1; i <= items.length; i++) {
+  params.push('$' + i);
   }
-  itemString = itemString.slice(0, -1);
   const queryConfig = {
-    text: "SELECT name, price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN ($1)",
-    values: [itemString]
+    text: 'SELECT name,price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE order_details.id IN (' + params.join(',') + ')',
+    values: [items]
   };
   db.query(queryConfig)
     .then((response) => {
