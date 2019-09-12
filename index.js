@@ -15,39 +15,53 @@ const port = process.env.PORT || 8080
 const app = express()
 const httpServer = http.createServer(app)
 const wss = new WebSocket.Server({
-    'server': httpServer
-})
-httpServer.listen(port)
+  'server': httpServer
+});
+httpServer.listen(port);
 
-wss.on('connection', function connection(ws) {
-  console.log('yay')
+wss.on('connection', function(ws) {
+  console.log('yay');
+  wss.onmessage = function(event) {
+    console.log(event);
+  };
   ws.send('something');
 });
 
-const paid = function(table_id, success){
-  console.log(wss.clients)
-  wss.clients.forEach(function eachClient(client) {
+const paid = function(table_id, success) {
+  console.log(wss.clients);
+  wss.clients.forEach(function(client) {
     console.log(client);
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify({
         table_id: table_id,
         success: success
       }));
-      console.log('sent')
+      console.log('sent');
     }
   });
-}
+};
+
+const newItem = function() {
+  console.log('reached new item');
+  wss.clients.forEach(function(client) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send('new item');
+    }
+  });
+};
 
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, 'client/build')));
 
-// app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
 app.use(cookiesMiddleware());
 app.use(morgan('dev'));
 
 app.get('/api/getTables/:restaurantId', (req, res) => {
+  wss.onmessage = function(event) {
+    console.log(event);
+  };
   const queryConfig = {
     text: `
       SELECT id, completed FROM (
@@ -60,7 +74,6 @@ app.get('/api/getTables/:restaurantId', (req, res) => {
   };
   db.query(queryConfig)
     .then((response) => {
-      console.log(response.rows);
       res.send(response.rows);
     })
     .catch((error) => {
@@ -116,7 +129,6 @@ app.post('/api/upgradeStatus/:orderId', (req, res) => {
   };
   db.query(queryConfig)
     .then((response) => {
-      console.log(response);
       const queryConfig = {
         text: '',
         values: []
@@ -126,11 +138,9 @@ app.post('/api/upgradeStatus/:orderId', (req, res) => {
         queryConfig.values = [orderId];
         db.query(queryConfig)
           .then((response) => {
-            console.log(response);
             res.send('success: time_accepted');
           })
           .catch((error) => {
-            console.error(error);
             res.send('failure: time_accepted');
           });
       } else if (!response.rows[0].time_completed) {
@@ -138,11 +148,9 @@ app.post('/api/upgradeStatus/:orderId', (req, res) => {
         queryConfig.values = [orderId];
         db.query(queryConfig)
           .then((response) => {
-            console.log(response);
             res.send('success: time_completed');
           })
           .catch((error) => {
-            console.error(error);
             res.send('failure: time_completed');
           });
       }
@@ -162,10 +170,8 @@ app.post('/login', (req, res) => {
   db.query(queryConfig)
     .then((response) => {
       const restaurantId = response.rows[0].id;
-      // req.universalCookies.set('user', restaurantId);
-      // res.send(`/admin/${restaurantId}`);
-      console.log(`restaurantId: ${restaurantId}`)
-      res.send({restaurantId});
+      console.log(`restaurantId: ${restaurantId}`);
+      res.send({ restaurantId });
     })
     .catch((error) => {
       res.send("error");
@@ -174,13 +180,6 @@ app.post('/login', (req, res) => {
 
 app.post('/logout', (req, res) => {
   res.send(`/admin`);
-});
-
-app.get('/restaurant/:id', (req, res) => {
-  const queryConfig = {
-    text: "SELECT * FROM tables WHERE restaurant_id = $1",
-    values: [req.params.id]
-  };
 });
 
 app.get('/:table_id', (req, res) => { //creates new order is table is empty or adds to current order
@@ -199,9 +198,9 @@ app.get('/:table_id', (req, res) => { //creates new order is table is empty or a
           values: [req.params.table_id]
         };
         db.query(queryConfig)
-          .then((response)=>{
+          .then((response) => {
             console.log('inside customers = 0')
-            if(response.rows[0].length === 0){
+            if (!response.rows[0]) {
               const queryConfig = {
                 text: "INSERT into orders (table_id, completed, payment_customers, time_started) VALUES ($1, FALSE, 0, NOW()) RETURNING id",
                 values: [req.params.table_id]
@@ -252,6 +251,7 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{nam
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
   };
+  console.log(req.body);
   console.log(`table id: ${req.params.table_id}`);
   db.query(queryConfig)
     .then((response) => {
@@ -267,6 +267,7 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{nam
             console.log(`item id: ${item.name}, item quantity: ${item.quantity}`);
             if (req.body.order[req.body.order.length - 1].name === item.name) {
               console.log("success");
+              newItem();
               res.send("success");
             }
           });
@@ -274,54 +275,54 @@ app.post('/:table_id/order', (req, res) => { // accepts array called order [{nam
     });
 });
 
-app.post('/:table_id/ordermore',(req,res)=>{
+app.post('/:table_id/ordermore', (req, res) => {
   const queryConfig = {
     text: "UPDATE tables SET current_number_customers = ((SELECT current_number_customers FROM tables WHERE id = $1) - 1) WHERE id = $1",
     values: [req.params.table_id]
   };
   console.log('test')
   db.query(queryConfig)
-    .then((response)=>{
+    .then((response) => {
       res.send('success')
     })
 })
 
-app.get('/:table_id/order', (req, res)=>{
+app.get('/:table_id/order', (req, res) => {
   const queryConfig = {
     text: "SELECT item_id, quantity, items.name, items.price_cents, order_details.id FROM order_details JOIN items ON items.id = item_id WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
     values: [req.params.table_id]
   };
   db.query(queryConfig)
-    .then(response=>{
-      res.send(response.rows)
-    })
-})
+    .then(response => {
+      res.send(response.rows);
+    });
+});
 
-app.get('/:table_id/finish', (req,res)=>{ // ends order
+app.get('/:table_id/finish', (req, res) => { // ends order
   const queryConfig = {
     text: "UPDATE orders SET completed = true WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
   };
   db.query(queryConfig)
-    .then(response=>{
+    .then(response => {
       res.send(success)
     })
 })
 
-app.post('/:table_id/pay/confirm',  (req,res)=>{
+app.post('/:table_id/pay/confirm', (req, res) => {
   const queryConfig = {
     text: "INSERT INTO payments (order_id, payment_cents) VALUES ((SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE), $2)",
     values: [req.params.table_id, req.body.price]
   };
   db.query(queryConfig)
-    .then(response=>{
+    .then(response => {
 
       const queryConfig = {
         text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
         values: [req.params.table_id]
       };
       db.query(queryConfig)
-        .then((response)=>{
+        .then((response) => {
           let numberOfPayments = response.rows[0].length
           const queryConfig = {
             text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
@@ -329,131 +330,130 @@ app.post('/:table_id/pay/confirm',  (req,res)=>{
           };
           db.query(queryConfig)
         })
-        res.send(success)
+      res.send(success)
     })
 })
 
 app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
   const queryConfig = {
-    text: "SELECT name, id, image FROM categories WHERE restaurant_id = $1",
+    text: "SELECT name, id, image FROM categories WHERE restaurant_id = $1 AND active",
     values: [req.params.restaurant_id]
   };
   db.query(queryConfig)
-  .then((response)=>{
-    let categories = response.rows;
-    const queryConfig = {
-      text: "SELECT * FROM categories JOIN items ON categories.id = items.category_id WHERE restaurant_id = $1",
-      values: [req.params.restaurant_id]
-    };
-    db.query(queryConfig)
-      .then((response)=>{
-        let menu = [];
-        for (category of categories){
-          let category_items = response.rows.filter(item=> item.category_id === category.id)
-          menu.push({category: category.name, items: category_items, image: category.image})
-        }
-        console.log(menu);
-        res.send(menu);
-      })
-  });
+    .then((response) => {
+      let categories = response.rows;
+      const queryConfig = {
+        text: "SELECT * FROM categories JOIN items ON categories.id = items.category_id WHERE restaurant_id = $1",
+        values: [req.params.restaurant_id]
+      };
+      db.query(queryConfig)
+        .then((response) => {
+          let menu = [];
+          for (let category of categories) {
+            let categoryItems = response.rows.filter(item => item.category_id === category.id);
+             menu.push({category: category.name, items: category_items, image: category.image})
+          }
+          res.send(menu);
+        });
+    });
 });
 
-app.post('/api/:restaurant_id/menu', (req, res)=>{//recieves [{category,items}, {category,items}] adds it to database and sets old items active to false
+app.post('/api/:restaurant_id/menu', (req, res) => { //recieves [{category,items}, {category,items}] adds it to database and sets old items active to false
   const queryConfig = {
     text: "UPDATE items SET active = FALSE FROM categories WHERE categories.restaurant_id = $1",
     values: [req.params.restaurant_id]
   };
   db.query(queryConfig)
-    .then(()=>{
+    .then(() => {
       const queryConfig = {
         text: "UPDATE categories SET active = FALSE WHERE restaurant_id = $1",
         values: [req.params.restaurant_id]
       };
       db.query(queryConfig)
-        .then(()=>{
-          let category_string = 'INSERT INTO categories (restaurant_id, name, active) VALUES '
-          for (category of req.body.menu) {
-            category_string += `( $1, '${category.category}', true),`
+        .then(() => {
+          let categoryString = 'INSERT INTO categories (restaurant_id, name, active) VALUES ';
+          for (let category of req.body.menu) {
+            categoryString += `( $1, '${category.category}', true),`;
           }
-          category_string = category_string.slice(0,-1)
-          category_string += ' RETURNING id'
+          categoryString = categoryString.slice(0, -1);
+          categoryString += ' RETURNING id';
           const queryConfig = {
-            text: category_string,
+            text: categoryString,
             values: [req.params.restaurant_id]
           };
           db.query(queryConfig)
-            .then((response)=>{
-              for (let index = 0; index < response.rows.length; index ++){
-                if (req.body.menu[index].items){
+            .then((response) => {
+              for (let index = 0; index < response.rows.length; index++) {
+                if (req.body.menu[index].items) {
                   let item_string = 'INSERT INTO items (category_id, name, price_cents, image, active) VALUES '
-                  for (item of req.body.menu[index].items) {
+                  for (let item of req.body.menu[index].items) {
                     item_string += `('${response.rows[index].id}', '${item.name}', '${item.price_cents}', '${item.image}' ,true),`
                   }
-                  item_string = item_string.slice(0,-1)
+                  item_string = item_string.slice(0, -1)
                   db.query(item_string)
-                    .then(()=>{
-                      if (index === response.rows.length-1){
+                    .then(() => {
+                      if (index === response.rows.length - 1) {
                         res.send("success")
                       }
                     })
                 } else {
-                  if (index === response.rows.length-1){
+                  if (index === response.rows.length - 1) {
                     res.send("success")
                   }
                 }
               }
-            })
-        })
-    })
-})
+            });
+        });
+    });
+});
 
-app.post('/calculate_payment', (req,res)=>{
+app.post('/calculate_payment', (req, res) => {
   let items = req.body.items;
   let price = 0;
   itemString = ''
-  for (item of items){
+  for (item of items) {
     itemString += item + ','
   }
-  itemString=itemString.slice(0,-1);
+  itemString = itemString.slice(0, -1);
   const queryConfig = {
     text: "SELECT price_cents, quantity, divide FROM order_details JOIN items ON items.id = item_id WHERE id IN ($1)",
     values: [itemString]
   };
   db.query(queryConfig)
-    .then((response)=>{
-      for (item of response.rows[0]){
+    .then((response) => {
+      for (item of response.rows[0]) {
         price += (item.price_cents * item.quantity) / divide
       }
-      res.send((price/100).toFixed(2))
+      res.send((price / 100).toFixed(2))
     })
 })
-app.get('/:table_id/pay/reset', (req, res)=>{
+app.get('/:table_id/pay/reset', (req, res) => {
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
     values: [req.params.table_id]
   };
   console.log(`table id: ${req.params.table_id}`);
   db.query(queryConfig)
-    .then((response)=>{
+    .then((response) => {
       let order_id = response.rows[0].id;
       const queryConfig = {
         text: "UPDATE order_details SET paid=FALSE, divide=0 WHERE order_id = $1",
         values: [order_id]
       };
       db.query(queryConfig)
-        .then((response)=>{
+        .then((response) => {
           const queryConfig = {
             text: "UPDATE orders SET payment_customers = 0 WHERE id = $1",
             values: [order_id]
           };
           db.query(queryConfig)
-            .then(()=>{
+            .then(() => {
               res.send('success')
             })
         })
     })
 })
-app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1,3,5] and updates in database
+app.post('/:table_id/pay', (req, res) => { // recieves array of order_datails.id [1,3,5] and updates in database
   let paid_items = req.body.items;
   const queryConfig = {
     text: "SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
@@ -461,27 +461,27 @@ app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1
   };
   console.log(`table id: ${req.params.table_id}`);
   db.query(queryConfig)
-    .then((response)=>{
+    .then((response) => {
       let order_id = response.rows[0].id
       let inserted = 0;
-      for (item of paid_items){
+      for (item of paid_items) {
         const queryConfig = {
           text: "UPDATE order_details SET paid=TRUE, divide=((SELECT divide FROM order_details WHERE id = $1) + 1) WHERE id = $1",
           values: [item]
         };
         db.query(queryConfig)
-          .then(()=>{
-            inserted+=1;
-            console.log("added ",item)
-            if(paid_items.length === inserted) {
+          .then(() => {
+            inserted += 1;
+            console.log("added ", item)
+            if (paid_items.length === inserted) {
               const queryConfig = {
                 text: "SELECT * FROM order_details WHERE order_id = $1 AND PAID = FALSE",
                 values: [order_id]
               };
               console.log("order id in select ", order_id)
               db.query(queryConfig)
-              .then((response)=>{
-                  if(response.rows.length === 0){
+                .then((response) => {
+                  if (response.rows.length === 0) {
                     paid(req.params.table_id, true)
                     res.send("success");
                   } else {
@@ -491,15 +491,15 @@ app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1
                       values: [order_id]
                     };
                     db.query(queryConfig)
-                      .then(()=>{
+                      .then(() => {
                         const queryConfig = {
                           text: "SELECT payment_customers, current_number_customers FROM orders JOIN tables ON tables.id = table_id WHERE orders.id = $1",
                           values: [order_id]
                         };
                         db.query(queryConfig)
-                          .then((response)=>{
+                          .then((response) => {
                             console.log(response.rows[0].payment_customers + " " + response.rows[0].current_number_customers)
-                            if (response.rows[0].payment_customers === response.rows[0].current_number_customers){
+                            if (response.rows[0].payment_customers === response.rows[0].current_number_customers) {
                               paid(req.params.table_id, false)
                               res.send("please try again")
                             } else {
@@ -511,7 +511,7 @@ app.post('/:table_id/pay', (req,res)=>{ // recieves array of order_datails.id [1
                 })
             }
           })
-      } 
+      }
     })
 })
 
