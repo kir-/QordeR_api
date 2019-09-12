@@ -336,7 +336,7 @@ app.post('/:table_id/pay/confirm', (req, res) => {
 
 app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
   const queryConfig = {
-    text: "SELECT name, id FROM categories WHERE restaurant_id = $1 AND active",
+    text: "SELECT name, id, image FROM categories WHERE restaurant_id = $1 AND active",
     values: [req.params.restaurant_id]
   };
   db.query(queryConfig)
@@ -351,7 +351,7 @@ app.get('/api/:restaurant_id/menu', (req, res) => { // gets menu from database
           let menu = [];
           for (let category of categories) {
             let categoryItems = response.rows.filter(item => item.category_id === category.id);
-            menu.push({ category: category.name, items: categoryItems });
+             menu.push({category: category.name, items: categoryItems, image: category.image})
           }
           res.send(menu);
         });
