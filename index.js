@@ -309,27 +309,73 @@ app.get('/:table_id/finish', (req, res) => { // ends order
     })
 })
 
-app.post('/:table_id/pay/confirm', (req, res) => {
+app.get('/:table_id/pay/done', (req, res) => {
+  const queryConfig = {
+    text: "SELECT payment_cents FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE",
+    values: [req.params.table_id]
+  }
+  db.query(queryConfig)
+    .then((response)=>{
+      let payment_cents = response.rows
+      let total_payment_cents
+      for (cents of payment_cents){
+        total_payment_cents += Number(cents.payment_cents)
+      }
+      const queryConfig = {
+        text: "SELECT price_cents, quantity FROM order_details JOIN items ON items.id = item_id JOIN orders ON order_id = orders.id WHERE table_id = $1",
+        values: [req.params.table_id]
+      }
+      db.query(queryConfig)
+        .then((response)=>{
+          let order_cents = response.rows
+          let total_order_cents
+          for (cents of order_cents){
+            total_order_cents += Number(cents.price_cents) * Number(cents.quantity)
+          }
+          if (total_payment_cents === total_order_cents){
+            const queryConfig = {
+              text: "UPDATE orders SET completed = true WHERE table_id = $1 AND completed = FALSE",
+              values: [req.params.table_id]
+            };
+            db.query(queryConfig)
+              .then(response => {
+                const queryConfig = {
+                  text: "UPDATE tables SET current_number_customers = 0 WHERE table_id = $1",
+                  values: [req.params.table_id]
+                };
+                db.query(queryConfig)
+                  .then(()=>{
+                    res.send('success')
+                  })
+              })
+          } else {
+            res.send('success')
+          }
+        })
+     
+    })
+})
+
+app.post('/:table_id/pay/confirm', (req, res) => { //
   const queryConfig = {
     text: "INSERT INTO payments (order_id, payment_cents) VALUES ((SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE), $2)",
     values: [req.params.table_id, req.body.price]
   };
   db.query(queryConfig)
     .then(response => {
-
-      const queryConfig = {
-        text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
-        values: [req.params.table_id]
-      };
-      db.query(queryConfig)
-        .then((response) => {
-          let numberOfPayments = response.rows[0].length
-          const queryConfig = {
-            text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
-            values: [req.params.table_id]
-          };
-          db.query(queryConfig)
-        })
+      // const queryConfig = {
+      //   text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
+      //   values: [req.params.table_id]
+      // };
+      // db.query(queryConfig)
+      //   .then((response) => {
+      //     let numberOfPayments = response.rows[0].length
+      //     const queryConfig = {
+      //       text: "SELECT * FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
+      //       values: [req.params.table_id]
+      //     };
+      //     db.query(queryConfig)
+      //   })
       res.send(success)
     })
 })
@@ -420,8 +466,8 @@ app.post('/calculate_total', (req, res) => {
   };
   db.query(queryConfig)
     .then((response) => {
-      for (item of response.rows[0]) {
-        price += (item.price_cents * item.quantity) / divide
+      for (item of response.rows) {
+        price += (item.price_cents * item.quantity) / item.divide
       }
       res.send((price / 100).toFixed(2))
     })
