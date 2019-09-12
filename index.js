@@ -422,7 +422,7 @@ app.post('/calculate_total', (req, res) => {
   db.query(queryConfig)
     .then((response) => {
       for (item of response.rows) {
-        price += (item.price_cents * item.quantity) / divide
+        price += (item.price_cents * item.quantity) / item.divide
       }
       res.send((price / 100).toFixed(2))
     })
