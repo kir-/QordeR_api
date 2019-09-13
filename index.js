@@ -25,14 +25,14 @@ wss.on('connection', function(ws) {
     console.log(event);
   };
   ws.send('something');
-  console.log(wss.clients);
+//   console.log(wss.clients);
 });
 
 
 const paid = function(table_id, success) {
-  console.log(wss.clients);
+//   console.log(wss.clients);
   wss.clients.forEach(function(client) {
-    console.log(client);
+//     console.log(client);
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify({
         table_id: table_id,
@@ -367,8 +367,10 @@ app.get('/:table_id/pay/done', (req, res) => {
     text: "SELECT payment_cents FROM payments WHERE order_id = (SELECT id FROM orders WHERE table_id = $1 AND completed = FALSE)",
     values: [req.params.table_id]
   }
+  console.log("hit done")
   db.query(queryConfig)
     .then((response)=>{
+      console.log("hit select")
       let payment_cents = response.rows
       let total_payment_cents
       for (cents of payment_cents){
