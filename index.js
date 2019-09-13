@@ -45,7 +45,7 @@ const paid = function(table_id, success) {
 
 const newItem = function() {
   console.log('reached new item');
-  console.log(wss.clients);
+//   console.log(wss.clients);
   wss.clients.forEach(function(client) {
     client.send('new item');
     console.log('sent newItem');
