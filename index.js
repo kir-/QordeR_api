@@ -22,7 +22,7 @@ httpServer.listen(port);
 wss.on('connection', function(ws) {
   console.log('yay');
   wss.onmessage = function(event) {
-    console.log(event);
+//     console.log(event);
   };
   ws.send('something');
 //   console.log(wss.clients);
