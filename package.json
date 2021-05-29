@@ -23,7 +23,7 @@
     "pg-native": "^3.0.0",
     "universal-cookie-express": "^4.0.1",
     "utf-8-validate": "5.0.2",
-    "ws": "7.1.2"
+    "ws": "7.4.6"
   },
   "devDependencies": {
     "nodemon": "^1.19.1"
